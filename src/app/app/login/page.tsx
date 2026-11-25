@@ -5,7 +5,16 @@ import { LoginForm } from "./login-form";
 async function NextAwareForm({ searchParams }: { searchParams: PageProps<"/app/login">["searchParams"] }) {
   const params = await searchParams;
   const next = typeof params.next === "string" ? params.next : undefined;
-  return <LoginForm next={next} />;
+  return (
+    <>
+      {params.reset ? (
+        <p role="status" className="rounded-md bg-status-green/10 px-3 py-2 text-sm">
+          The demo was reset. Sign in again; phones need to be registered again too.
+        </p>
+      ) : null}
+      <LoginForm next={next} />
+    </>
+  );
 }
 
 export default function LoginPage({ searchParams }: PageProps<"/app/login">) {

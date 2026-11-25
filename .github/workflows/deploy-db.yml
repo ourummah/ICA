@@ -1,0 +1,45 @@
+name: Deploy database
+
+# Run by hand from the Actions tab: applies migrations to the hosted Supabase project and,
+# if ticked, (re)loads the demo tenant. Secrets are set in the repository's Actions secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      seed:
+        description: "Reset and load the demo tenant after migrating"
+        type: boolean
+        default: false
+
+concurrency: deploy-db
+
+jobs:
+  migrate:
+    name: Migrate (and seed)
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check secrets are set
+        run: |
+          for v in SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD SUPABASE_PROJECT_REF; do
+            if [ -z "${!v}" ]; then echo "::error::Repository secret $v is not set"; exit 1; fi
+          done
+      - name: Link project
+        run: npx supabase link --project-ref "$SUPABASE_PROJECT_REF"
+      - name: Apply migrations
+        run: npx supabase db push --include-all
+      - name: Load demo tenant
+        if: ${{ inputs.seed }}
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DEMO_STAFF_PASSWORD: ${{ secrets.DEMO_STAFF_PASSWORD }}
+        run: npm run seed
