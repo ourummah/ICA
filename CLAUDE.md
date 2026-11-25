@@ -36,7 +36,8 @@ Next.js App Router + TypeScript, Tailwind + shadcn/ui, Dexie (IndexedDB), a PWA 
 - `npm run lint` / `npm run typecheck` / `npm test` / `npm run e2e`
 - `npm run format` / `npm run format:check` — Prettier
 - `npm run db:types` — regenerate `src/lib/database.types.ts` from the local database
-- `npm run seed` — load the demo tenant (Southern Cross Meats (Demo))
+- `npm run seed` — reset and load the demo tenant (Southern Cross Meats (Demo)); local staff password `ica-demo-local`, cleaner PINs 1111–4444
+- `npm run test:db` — database tests (RLS, hash chain, PINs, seed) against the local Supabase stack
 - `npx supabase start` / `npx supabase db reset` (or `npm run db:start` / `npm run db:reset`) — local database (needs Docker)
 
 ## Definition of done for the MVP
