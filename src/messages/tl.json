@@ -1,1 +1,92 @@
-{}
+{
+  "common": {
+    "loading": "Naglo-load…",
+    "signOut": "Mag-sign out",
+    "back": "Bumalik",
+    "cancel": "Kanselahin",
+    "retry": "Subukan ulit",
+    "language": "Wika"
+  },
+  "sync": {
+    "allSaved": "Naka-save lahat ✓",
+    "syncing": "Nagsi-sync…",
+    "waiting": "Naka-save sa device — {count, plural, one {# item} other {# item}} ang naghihintay mag-sync"
+  },
+  "signIn": {
+    "title": "Sino ang maglilinis?",
+    "subtitle": "Pindutin ang pangalan mo",
+    "enterPin": "Ilagay ang PIN mo",
+    "wrongPin": "Mali ang PIN. Subukan ulit.",
+    "lockedOut": "Sobrang daming subok. Maghintay ng {seconds} segundo.",
+    "noCleaners": "Wala pang naka-set up na tagalinis sa site na ito. Magtanong sa supervisor mo.",
+    "clear": "Burahin lahat",
+    "deleteDigit": "Burahin"
+  },
+  "language": {
+    "title": "Piliin ang wika mo",
+    "continue": "Magpatuloy"
+  },
+  "consent": {
+    "title": "Bago ka magsimula",
+    "body": "Ang app na ito ay nagtatala ng mga litrato, tala, timer at resulta ng test habang naglilinis ka. Ang mga talang ito ay itinatago para sa kaligtasan ng pagkain at maaaring tingnan ng supervisor mo, ng quality team at ng mga auditor.",
+    "accept": "Naiintindihan ko"
+  },
+  "tasks": {
+    "title": "Lilinisin ngayong gabi",
+    "mine": "Mga gawain mo",
+    "others": "Iba pang gawain ngayong gabi",
+    "none": "Wala kang gawain ngayong gabi. Magtanong sa supervisor mo.",
+    "noShift": "Wala pang nakaplanong shift.",
+    "stepsDone": "{done} sa {total} hakbang",
+    "reclean": "Linisin ulit",
+    "status": {
+      "pending": "Hindi pa nasisimulan",
+      "in_progress": "Ginagawa",
+      "completed": "Tapos na",
+      "reclean_required": "Ibinalik para linisin ulit",
+      "verified": "Na-check na"
+    },
+    "risk": {
+      "high": "Mataas na panganib",
+      "medium": "Katamtamang panganib",
+      "low": "Mababang panganib"
+    }
+  },
+  "step": {
+    "progress": "Hakbang {current} sa {total}",
+    "done": "Tapos na",
+    "next": "Susunod",
+    "cantDo": "Hindi ko magawa ang hakbang na ito",
+    "cantDoTitle": "Bakit hindi mo magawa ang hakbang na ito?",
+    "reasons": {
+      "equipment_broken": "Sira ang kagamitan",
+      "no_chemical": "Walang kemikal",
+      "unsafe": "Hindi ligtas",
+      "no_access": "Hindi maabot",
+      "other": "Ibang dahilan"
+    },
+    "chemical": "Kemikal",
+    "dilution": "Tapang ng timpla",
+    "takePhoto": "Kumuha ng litrato",
+    "retakePhoto": "Kumuha ulit ng litrato",
+    "photoNeeded": "Kumuha ng litrato para matapos ang hakbang na ito",
+    "addNote": "Magdagdag ng tala",
+    "notePlaceholder": "Sumulat sa kahit anong wika",
+    "timerRunning": "Maghintay — tumatakbo ang timer",
+    "timerDone": "Tapos na ang oras. Susunod na hakbang.",
+    "finishEarly": "Tapusin nang maaga",
+    "finishEarlyConfirm": "Hindi pa tapos ang timer. Pindutin ulit para tapusin nang maaga.",
+    "atpEnter": "Ilagay ang ATP reading (RLU)",
+    "atpLimit": "Pasado kung {max} o mas mababa",
+    "atpSave": "I-save ang reading",
+    "atpPass": "Pasado",
+    "atpFail": "Bagsak — linisin ulit",
+    "atpFailHelp": "Sabihan ang supervisor mo. Linisin ulit ang lugar na ito mula sa hakbang ng foam, saka mag-swab ulit.",
+    "saveFailed": "Hindi ma-save. Tingnan ang signal at subukan ulit."
+  },
+  "complete": {
+    "title": "Tapos ang gawain",
+    "body": "Magaling. Naka-save ang trabaho mo sa device na ito. Makikita ito ng supervisor mo kapag nakapag-sync na ang device.",
+    "backToTasks": "Bumalik sa mga gawain"
+  }
+}

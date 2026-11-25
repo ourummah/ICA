@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
+import { translateInBackground } from "@/lib/ai/notes";
 import { getDevice } from "@/lib/device/server";
 import { raiseExceptions, type SavedRecord } from "@/lib/exceptions/raise";
 import { payloadHash } from "@/lib/records/payload";
@@ -95,6 +96,16 @@ export async function POST(request: Request) {
       secondsPerDwellMinute: process.env.DEMO_FAST_TIMERS === "true" ? 1 : 60,
     }).catch((e: unknown) => console.error("exceptions engine failed", e));
   }
+
+  // SPEC F8: translate non-English notes after the response, so sync never waits on the AI.
+  const withNotes = saved.filter((r) => r.payload.note_original && r.payload.note_language !== "en");
+  if (withNotes.length)
+    after(() =>
+      translateInBackground(
+        device.siteId,
+        withNotes.map((r) => r.id),
+      ),
+    );
 
   return NextResponse.json({ outcomes, server_time: new Date().toISOString() });
 }

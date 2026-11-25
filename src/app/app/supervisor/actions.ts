@@ -168,3 +168,27 @@ export async function decideRelease(_: ActionState, formData: FormData): Promise
   revalidatePath("/app/supervisor", "layout");
   return { ok: true, message: decision === "released" ? "Zone released." : "Zone held." };
 }
+
+// ---------------------------------------------------------------------------
+// Translation review (SPEC F5/F8)
+// ---------------------------------------------------------------------------
+const reviewSchema = z.object({
+  recordId: z.uuid(),
+  text: z.string().trim().min(1, "The English can't be empty.").max(2000),
+});
+
+export async function reviewTranslation(_: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = reviewSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { errors: parsed.error.issues.map((i) => i.message) };
+  const { supabase, site, profileId } = await requireSiteRole(["supervisor", "qa"]);
+  const { error } = await supabase.from("note_translations").insert({
+    step_record_id: parsed.data.recordId,
+    site_id: site.id,
+    text_en: parsed.data.text,
+    source: "human",
+    created_by: profileId,
+  });
+  if (error) return { errors: [friendlyDbError(error)] };
+  revalidatePath("/app/supervisor", "layout");
+  return { ok: true, message: "Saved as supervisor-confirmed." };
+}
