@@ -135,9 +135,17 @@
   - DB: the sweep translates only untranslated non-English notes, retries failures, stays within the site, and keeps originals. Supervisors can add human rows; AI rows, site admins and other sites can't.
   - E2E: a Tagalog note appears with the AI label next to the original, then is confirmed and corrected.
 
+### M9: Marketing site and demo requests
+
+- Landing page at `/`: hero, the problem, how it works (Capture, Checks, Pre-op alerts, Audit pack), features, founding pilot offer and a "Book a demo" form. Copy lives in `src/app/(marketing)/content.ts` so it can be edited without touching layout.
+- Pricing is hidden unless `SHOW_PRICING=true`, and its text is a placeholder until real prices are set.
+- `/privacy`: a placeholder notice, clearly marked as not yet reviewed by a lawyer.
+- `POST /api/demo-requests`: Zod-validated, honeypot field for bots, 5 valid requests per 10 minutes per IP, saved to `demo_requests` with the service role (the table has no RLS policies, so nobody can read it through the API).
+- Email notification through Resend when `RESEND_API_KEY` and `DEMO_REQUEST_NOTIFY_EMAIL` are set; sent after the response, so a mail problem never loses a request. Optional `DEMO_REQUEST_FROM_EMAIL` for a verified sender.
+- Tests: unit (validation, IP parsing, email formatting, Resend call with fetch mocked); e2e (landing page, how it works, a demo request saved after a validation error, privacy placeholder, bot and bad input handling) on desktop and phone.
+
 ## Next
 
-- M9: marketing website and demo request form.
 - M10: deploy to Vercel and rehearse the demo script on a real phone.
 
 ## Decisions
@@ -186,6 +194,10 @@
 - **A note's language is the cleaner's chosen app language.** A note written in Tagalog by a cleaner using the English app is not translated. The prompt keeps English parts as they are, so mixed notes are fine.
 - **Translation runs in `after()` rather than a queue.** Enough for the demo; the board sweep catches anything a sync missed.
 - The rate limiter is in memory, per server instance: enough to stop a stuck client, not a distributed limit.
+
+- **Website copy is written from SPEC.md**, because the ICA Sales Overview deck wasn't available. Check it against the deck before launch.
+- **Demo requests are rate limited only after validation**, so someone fixing a typo is never locked out; bots that fill the honeypot get a fake success.
+- **No admin screen for demo requests.** They are in the `demo_requests` table (Supabase dashboard) and in the notification email.
 
 ## Known gaps
 
