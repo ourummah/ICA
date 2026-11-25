@@ -5,7 +5,11 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: { "@": path.resolve(import.meta.dirname, "src") },
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src"),
+      // Server modules import "server-only", which throws outside a React Server build.
+      "server-only": path.resolve(import.meta.dirname, "tests/stubs/server-only.ts"),
+    },
   },
   test: {
     environment: "jsdom",

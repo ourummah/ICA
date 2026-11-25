@@ -126,4 +126,28 @@ test("F4/F5: exceptions turn the zone red live; a re-clean turns it green", asyn
   );
   expect(Number(exceptions.open)).toBe(0);
   await phoneContext.close();
+
+  // SPEC F7: the audit pack for the demo night, as PDF (under 15 s) and CSV.
+  await page.getByRole("link", { name: "Audit pack" }).click();
+  await expect(page.getByRole("heading", { name: "Audit pack" })).toBeVisible();
+  const started = Date.now();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download PDF" }).click(),
+  ]);
+  const pdfPath = test.info().outputPath("audit-pack.pdf");
+  await download.saveAs(pdfPath);
+  expect(Date.now() - started).toBeLessThan(15_000);
+  expect(download.suggestedFilename()).toMatch(/^audit-pack-riverbend-plant-demo-\d{4}-\d{2}-\d{2}\.pdf$/);
+  const { readFileSync } = await import("node:fs");
+  expect(readFileSync(pdfPath).subarray(0, 5).toString()).toBe("%PDF-");
+
+  const [csvDownload] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download CSV" }).click(),
+  ]);
+  const csv = readFileSync(await csvDownload.path(), "utf8");
+  const mincerRows = csv.split("\r\n").filter((l) => l.includes("Mincer 1"));
+  expect(mincerRows).toHaveLength(18); // two cleans of 9 steps
+  expect(mincerRows.some((l) => l.includes(",failed,") && l.includes(",200,150,"))).toBe(true);
 });

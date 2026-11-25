@@ -3,6 +3,7 @@ import Link from "next/link";
 const nav = [
   { href: "/app/supervisor", label: "Zone board" },
   { href: "/app/supervisor/exceptions", label: "Exceptions" },
+  { href: "/app/supervisor/audit", label: "Audit pack" },
 ];
 
 export default function SupervisorLayout({ children }: LayoutProps<"/app/supervisor">) {

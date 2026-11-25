@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.5.0",
+    "@react-pdf/renderer": "4.9.0",
     "@serwist/turbopack": "^9.6.0",
     "@serwist/window": "^9.6.0",
     "@supabase/ssr": "^0.12.7",
