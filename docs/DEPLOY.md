@@ -70,3 +70,36 @@ Run it again (without the tick) whenever new migrations are merged.
 
 Sign in as the admin and use **Reset demo** on the admin home page (type RESET). It reloads tonight's
 shift. Everyone is signed out and the phone needs registering again, so do it before you start.
+
+## 6. Blockchain anchoring (optional, Base Sepolia test network)
+
+Cleans are sealed and batched without this. These steps make each night's batch get anchored on
+the Base Sepolia **test network**, so records show "Verified ✓". Test ETH has no value. Moving to
+Base mainnet is a separate, later step (docs/AUDIT_TRAIL.md). **Never paste the private key into
+chat or commit it.** It only goes into the GitHub and Vercel secret settings.
+
+1. **Create a dedicated wallet** used only for anchoring. In a wallet app (for example Coinbase
+   Wallet or MetaMask) add a new account, then export its private key (starts with `0x`). Keep it
+   in your password manager.
+2. **Get test ETH**: open a Base Sepolia faucet (search "Base Sepolia faucet"; Coinbase's developer
+   platform has one) and send a small amount to the wallet's address. 0.01 test ETH lasts years.
+3. **Add the key to GitHub**: repository **Settings → Secrets and variables → Actions → New
+   repository secret**, name `ANCHOR_PRIVATE_KEY`.
+4. **Deploy the contract**: **Actions → Deploy anchor contract → Run workflow**. When it goes green,
+   open the run: its summary shows the contract address.
+5. **Add these in Vercel** (Settings → Environment Variables, Production), then redeploy:
+
+| Name                      | Value                                                                |
+| ------------------------- | -------------------------------------------------------------------- |
+| `ANCHOR_PRIVATE_KEY`      | The same private key                                                 |
+| `ANCHOR_CONTRACT_ADDRESS` | The address from step 4                                              |
+| `CRON_SECRET`             | A long random string (Vercel sends it to the nightly job)            |
+| `ANCHOR_ALERT_EMAIL`      | Optional: where failure and low-balance alerts go (needs Resend key) |
+| `PUBLIC_SITE_URL`         | Optional: your public address, used in audit pack QR codes           |
+
+6. **Check it**: sign in as the admin, open **Record seals**, and press **Seal and anchor now**. The
+   batch should show `anchored` with a transaction link. The job then runs by itself every night at
+   00:15 Australian Eastern Standard Time.
+7. Optional: verify the contract's source on Basescan (open the contract address, **Contract →
+   Verify and publish**, Solidity single file, the compiler version and settings printed by the
+   workflow, source from `contracts/ICAAnchor.sol`).

@@ -13,7 +13,10 @@ export async function GET(request: Request) {
   const parsed = parsePackFilter(new URL(request.url).searchParams);
   if (!parsed.ok) return new Response(parsed.error, { status: 400 });
   const ctx = await requireSiteRole(["qa", "supervisor", "site_admin"]);
-  const pack = await loadAuditPack(ctx, parsed.filter, { withPhotos: true });
+  const pack = await loadAuditPack(ctx, parsed.filter, {
+    withPhotos: true,
+    verifyBaseUrl: process.env.PUBLIC_SITE_URL || new URL(request.url).origin,
+  });
   const pdf = await renderToBuffer(<AuditPackDocument pack={pack} />);
   return new Response(new Uint8Array(pdf), {
     headers: {

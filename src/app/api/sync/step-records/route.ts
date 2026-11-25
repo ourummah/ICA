@@ -5,6 +5,7 @@ import { getDevice } from "@/lib/device/server";
 import { raiseExceptions, type SavedRecord } from "@/lib/exceptions/raise";
 import { payloadHash } from "@/lib/records/payload";
 import { stepRecordBatchSchema, type SyncOutcome } from "@/lib/records/sync-schemas";
+import { sealInBackground } from "@/lib/seal/background";
 
 /**
  * Accepts step records from a registered device. Safe to retry: records are keyed by
@@ -77,6 +78,7 @@ export async function POST(request: Request) {
         device_completed_at: payload.device_completed_at,
         payload_hash,
         supersedes_id: supersedesId,
+        photo_sha256: payload.photo_sha256 ?? null,
       })
       .select("id")
       .single();
@@ -106,6 +108,9 @@ export async function POST(request: Request) {
         withNotes.map((r) => r.id),
       ),
     );
+
+  // Seal finished cleans after the response (docs/AUDIT_TRAIL.md). The nightly job catches misses.
+  if (saved.length) after(() => sealInBackground(device.siteId));
 
   return NextResponse.json({ outcomes, server_time: new Date().toISOString() });
 }

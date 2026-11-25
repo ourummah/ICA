@@ -23,7 +23,35 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "audit_events": {
+            "anchor_batches": {
+                  Row: {
+                    "alerted_at": string | null,"anchored_at": string | null,"attempts": number,"block_number": number | null,"block_timestamp": string | null,"chain": string,"contract_address": string | null,"created_at": string,"id": number,"last_error": string | null,"max_fee_per_gas": number | null,"max_priority_fee_per_gas": number | null,"merkle_root": string,"nonce": number | null,"raw_tx": string | null,"record_count": number,"status": string,"submitted_at": string | null,"tx_hash": string | null,"tx_hashes": (string)[],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "alerted_at"?: string | null,"anchored_at"?: string | null,"attempts"?: number,"block_number"?: number | null,"block_timestamp"?: string | null,"chain": string,"contract_address"?: string | null,"created_at"?: string,"id"?: number,"last_error"?: string | null,"max_fee_per_gas"?: number | null,"max_priority_fee_per_gas"?: number | null,"merkle_root": string,"nonce"?: number | null,"raw_tx"?: string | null,"record_count": number,"status"?: string,"submitted_at"?: string | null,"tx_hash"?: string | null,"tx_hashes"?: (string)[],"updated_at"?: string
+                  }
+                  Update: {
+                    "alerted_at"?: string | null,"anchored_at"?: string | null,"attempts"?: number,"block_number"?: number | null,"block_timestamp"?: string | null,"chain"?: string,"contract_address"?: string | null,"created_at"?: string,"id"?: number,"last_error"?: string | null,"max_fee_per_gas"?: number | null,"max_priority_fee_per_gas"?: number | null,"merkle_root"?: string,"nonce"?: number | null,"raw_tx"?: string | null,"record_count"?: number,"status"?: string,"submitted_at"?: string | null,"tx_hash"?: string | null,"tx_hashes"?: (string)[],"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"anchor_job_lease": {
+                  Row: {
+                    "holder": string | null,"id": number,"locked_until": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "holder"?: string | null,"id"?: number,"locked_until"?: string
+                  }
+                  Update: {
+                    "holder"?: string | null,"id"?: number,"locked_until"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"audit_events": {
                   Row: {
                     "action": string,"actor_profile_id": string | null,"created_at": string,"data": NonNullable<Json>,"entity": string,"entity_id": string | null,"hash": string,"id": string,"prev_hash": string,"seq": number,"site_id": string
                   }
@@ -413,6 +441,44 @@ isOneToOne: false
       referencedColumns: ["id","site_id"]
     }
                   ]
+                },"sealed_records": {
+                  Row: {
+                    "amends_record_id": string | null,"audit_event_hash": string,"batch_id": number | null,"canonical_text": string,"content_hash": string,"created_at": string,"id": string,"merkle_proof": Json | null,"prev_site_record_hash": string | null,"record_hash": string,"record_type": string,"sealed_at": string,"site_id": string,"site_seq": number,"task_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amends_record_id"?: string | null,"audit_event_hash": string,"batch_id"?: number | null,"canonical_text": string,"content_hash": string,"created_at"?: string,"id": string,"merkle_proof"?: Json | null,"prev_site_record_hash"?: string | null,"record_hash": string,"record_type": string,"sealed_at"?: string,"site_id": string,"site_seq": number,"task_id": string
+                  }
+                  Update: {
+                    "amends_record_id"?: string | null,"audit_event_hash"?: string,"batch_id"?: number | null,"canonical_text"?: string,"content_hash"?: string,"created_at"?: string,"id"?: string,"merkle_proof"?: Json | null,"prev_site_record_hash"?: string | null,"record_hash"?: string,"record_type"?: string,"sealed_at"?: string,"site_id"?: string,"site_seq"?: number,"task_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "sealed_records_amends_record_id_fkey"
+      columns: ["amends_record_id"]
+isOneToOne: false
+      referencedRelation: "sealed_records"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sealed_records_batch_id_fkey"
+      columns: ["batch_id"]
+isOneToOne: false
+      referencedRelation: "anchor_batches"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sealed_records_site_id_fkey"
+      columns: ["site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sealed_records_task_id_site_id_fkey"
+      columns: ["task_id","site_id"]
+isOneToOne: false
+      referencedRelation: "tasks"
+      referencedColumns: ["id","site_id"]
+    }
+                  ]
                 },"shifts": {
                   Row: {
                     "created_at": string,"ends_at": string,"id": string,"shift_date": string,"site_id": string,"starts_at": string,"updated_at": string
@@ -551,14 +617,14 @@ isOneToOne: false
                   ]
                 },"step_records": {
                   Row: {
-                    "atp_value": number | null,"chain_hash": string | null,"client_record_id": string,"created_at": string,"device_completed_at": string | null,"device_id": string | null,"device_started_at": string | null,"id": string,"note_language": string | null,"note_original": string | null,"payload_hash": string,"profile_id": string,"result": Database["public"]['Enums']["step_result"],"server_received_at": string,"site_id": string,"skip_reason": string | null,"ssop_step_id": string,"supersedes_id": string | null,"task_id": string,"timer_ended_at": string | null,"timer_started_at": string | null
+                    "atp_value": number | null,"chain_hash": string | null,"client_record_id": string,"created_at": string,"device_completed_at": string | null,"device_id": string | null,"device_started_at": string | null,"id": string,"note_language": string | null,"note_original": string | null,"payload_hash": string,"photo_sha256": string | null,"profile_id": string,"result": Database["public"]['Enums']["step_result"],"server_received_at": string,"site_id": string,"skip_reason": string | null,"ssop_step_id": string,"supersedes_id": string | null,"task_id": string,"timer_ended_at": string | null,"timer_started_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "atp_value"?: number | null,"chain_hash"?: string | null,"client_record_id": string,"created_at"?: string,"device_completed_at"?: string | null,"device_id"?: string | null,"device_started_at"?: string | null,"id"?: string,"note_language"?: string | null,"note_original"?: string | null,"payload_hash": string,"profile_id": string,"result": Database["public"]['Enums']["step_result"],"server_received_at"?: string,"site_id": string,"skip_reason"?: string | null,"ssop_step_id": string,"supersedes_id"?: string | null,"task_id": string,"timer_ended_at"?: string | null,"timer_started_at"?: string | null
+                    "atp_value"?: number | null,"chain_hash"?: string | null,"client_record_id": string,"created_at"?: string,"device_completed_at"?: string | null,"device_id"?: string | null,"device_started_at"?: string | null,"id"?: string,"note_language"?: string | null,"note_original"?: string | null,"payload_hash": string,"photo_sha256"?: string | null,"profile_id": string,"result": Database["public"]['Enums']["step_result"],"server_received_at"?: string,"site_id": string,"skip_reason"?: string | null,"ssop_step_id": string,"supersedes_id"?: string | null,"task_id": string,"timer_ended_at"?: string | null,"timer_started_at"?: string | null
                   }
                   Update: {
-                    "atp_value"?: number | null,"chain_hash"?: string | null,"client_record_id"?: string,"created_at"?: string,"device_completed_at"?: string | null,"device_id"?: string | null,"device_started_at"?: string | null,"id"?: string,"note_language"?: string | null,"note_original"?: string | null,"payload_hash"?: string,"profile_id"?: string,"result"?: Database["public"]['Enums']["step_result"],"server_received_at"?: string,"site_id"?: string,"skip_reason"?: string | null,"ssop_step_id"?: string,"supersedes_id"?: string | null,"task_id"?: string,"timer_ended_at"?: string | null,"timer_started_at"?: string | null
+                    "atp_value"?: number | null,"chain_hash"?: string | null,"client_record_id"?: string,"created_at"?: string,"device_completed_at"?: string | null,"device_id"?: string | null,"device_started_at"?: string | null,"id"?: string,"note_language"?: string | null,"note_original"?: string | null,"payload_hash"?: string,"photo_sha256"?: string | null,"profile_id"?: string,"result"?: Database["public"]['Enums']["step_result"],"server_received_at"?: string,"site_id"?: string,"skip_reason"?: string | null,"ssop_step_id"?: string,"supersedes_id"?: string | null,"task_id"?: string,"timer_ended_at"?: string | null,"timer_started_at"?: string | null
                   }
                   Relationships: [
                     {
@@ -675,8 +741,14 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "activate_ssop":
+            "acquire_anchor_lease":
+{ Args: { "p_holder": string,"p_seconds": number }; Returns: boolean
+                           },
+"activate_ssop":
 { Args: { "p_ssop_id": string }; Returns: undefined
+                           },
+"create_anchor_batch":
+{ Args: { "p_chain": string,"p_contract"?: string,"p_items": Json,"p_root": string }; Returns: number
                            },
 "create_ssop_draft":
 { Args: { "p_equipment_id": string }; Returns: string
@@ -700,6 +772,9 @@ isOneToOne: false
 "flag_overdue_tasks":
 { Args: { "p_site_id": string }; Returns: number
                            },
+"log_security_event":
+{ Args: { "p_detail": Json,"p_kind": string,"p_site_id": string }; Returns: undefined
+                           },
 "move_ssop_step":
 { Args: { "p_direction": number,"p_step_id": string }; Returns: undefined
                            },
@@ -707,6 +782,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "device_id": string,"label": string,"site_id": string,"site_name": string,"site_timezone": string
             }[]
+                           },
+"release_anchor_lease":
+{ Args: { "p_holder": string }; Returns: undefined
                            },
 "replace_ssop_steps":
 { Args: { "p_ssop_id": string,"p_steps": Json }; Returns: number
@@ -722,11 +800,43 @@ isOneToOne: false
 "resolve_exception":
 { Args: { "p_exception_id": string,"p_note": string }; Returns: undefined
                            },
+"retry_anchor_batch":
+{ Args: { "p_batch_id": number }; Returns: undefined
+                           },
+"seal_record":
+{ Args: { "p_canonical": string,"p_content_hash": string }; Returns: {
+              "amends_record_id": string | null,
+"audit_event_hash": string,
+"batch_id": number | null,
+"canonical_text": string,
+"content_hash": string,
+"created_at": string,
+"id": string,
+"merkle_proof": Json | null,
+"prev_site_record_hash": string | null,
+"record_hash": string,
+"record_type": string,
+"sealed_at": string,
+"site_id": string,
+"site_seq": number,
+"task_id": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "sealed_records"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "set_cleaner_pin":
 { Args: { "p_pin": string,"p_profile_id": string }; Returns: undefined
                            },
 "set_cleaner_preferences":
 { Args: { "p_accept_consent"?: boolean,"p_language"?: Database["public"]['Enums']["ui_language"],"p_profile_id": string }; Returns: undefined
+                           },
+"tasks_needing_seal":
+{ Args: { "p_limit"?: number,"p_site_id"?: string }; Returns: {
+              "latest_record_hash": string,"latest_record_id": string,"site_id": string,"task_id": string
+            }[]
                            },
 "verify_chain":
 { Args: { "p_from"?: string,"p_site_id": string,"p_to"?: string }; Returns: {
@@ -735,6 +845,11 @@ isOneToOne: false
                            },
 "verify_cleaner_pin":
 { Args: { "p_pin": string,"p_profile_id": string }; Returns: boolean
+                           },
+"verify_seal_chain":
+{ Args: { "p_site_id": string }; Returns: {
+              "breaks": number,"first_break_seq": number,"records": number,"verified": boolean
+            }[]
                            }
           }
           Enums: {

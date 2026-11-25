@@ -1,5 +1,7 @@
 import "server-only";
 
+import QRCode from "qrcode";
+
 import type { AdminContext } from "@/lib/admin/context";
 
 import type { AuditPack, PackFilter, PackPhoto, PackRecord, PackTask } from "./types";
@@ -28,7 +30,7 @@ function must<T>(res: { data: T | null; error: { message: string } | null }, wha
 export async function loadAuditPack(
   ctx: Pick<AdminContext, "supabase" | "site" | "displayName">,
   filter: PackFilter,
-  opts: { withPhotos: boolean },
+  opts: { withPhotos: boolean; verifyBaseUrl?: string },
 ): Promise<AuditPack> {
   const { supabase, site } = ctx;
 
@@ -234,6 +236,8 @@ export async function loadAuditPack(
     verified: !!chainRow?.verified,
   };
 
+  const seals = await loadSeals(supabase, site.id, tasks, opts.verifyBaseUrl ?? null, opts.withPhotos);
+
   if (opts.withPhotos)
     await loadThumbnails(
       supabase,
@@ -253,6 +257,57 @@ export async function loadAuditPack(
     preops,
     releases,
     chain,
+    seals,
+  };
+}
+
+/** Attaches each task's latest seal, with a QR code to its public verify page for the PDF. */
+async function loadSeals(
+  supabase: Supabase,
+  siteId: string,
+  tasks: PackTask[],
+  verifyBaseUrl: string | null,
+  withQr: boolean,
+): Promise<AuditPack["seals"]> {
+  const rows = await inChunks(
+    tasks.map((t) => t.id),
+    async (chunk) =>
+      must(
+        await supabase
+          .from("sealed_records")
+          .select("id, task_id, site_seq, record_hash, anchor_batches(status, block_timestamp)")
+          .in("task_id", chunk)
+          .order("site_seq"),
+        "sealed records",
+      ),
+  );
+  const byTask = new Map(tasks.map((t) => [t.id, t]));
+  const versions = new Map<string, number>();
+  for (const r of rows) {
+    versions.set(r.task_id, (versions.get(r.task_id) ?? 0) + 1);
+    const task = byTask.get(r.task_id);
+    if (!task) continue;
+    const anchored = r.anchor_batches?.status === "anchored" ? r.anchor_batches.block_timestamp : null;
+    task.seal = {
+      recordId: r.id,
+      recordHash: r.record_hash,
+      versions: versions.get(r.task_id) ?? 1,
+      anchoredAt: anchored,
+      verifyUrl: verifyBaseUrl ? `${verifyBaseUrl.replace(/\/$/, "")}/verify/${r.id}` : null,
+    };
+  }
+  if (withQr) {
+    for (const t of tasks) {
+      if (t.seal?.verifyUrl)
+        t.seal.qrPng = await QRCode.toBuffer(t.seal.verifyUrl, { margin: 1, width: 120 });
+    }
+  }
+  const sealedTasks = tasks.filter((t) => t.seal);
+  const [chainRow] = must(await supabase.rpc("verify_seal_chain", { p_site_id: siteId }), "seal chain");
+  return {
+    sealed: sealedTasks.length,
+    anchored: sealedTasks.filter((t) => t.seal?.anchoredAt).length,
+    chain: { records: Number(chainRow?.records ?? 0), verified: !!chainRow?.verified },
   };
 }
 

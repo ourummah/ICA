@@ -52,6 +52,18 @@ export interface PackTask {
   assignedName: string | null;
   recleanOfTaskId: string | null;
   records: PackRecord[];
+  /** The task's latest sealed record (docs/AUDIT_TRAIL.md), if sealed. */
+  seal?: PackSeal;
+}
+
+export interface PackSeal {
+  recordId: string;
+  recordHash: string;
+  versions: number;
+  anchoredAt: string | null;
+  verifyUrl: string | null;
+  /** PNG QR code of verifyUrl, for the PDF. */
+  qrPng?: Buffer;
 }
 
 export interface PackException {
@@ -100,4 +112,5 @@ export interface AuditPack {
   preops: PackPreop[];
   releases: PackRelease[];
   chain: { records: number; breaks: number; firstBreakSeq: number | null; verified: boolean };
+  seals?: { sealed: number; anchored: number; chain: { records: number; verified: boolean } };
 }

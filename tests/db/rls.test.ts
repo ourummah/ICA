@@ -8,8 +8,11 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
+import { sealPendingRecords } from "@/lib/seal/seal";
+
 import {
   addMembership,
+  admin,
   anonClient,
   createDevice,
   createOrg,
@@ -42,6 +45,7 @@ const SITE_SCOPED_TABLES = [
   "releases",
   "audit_events",
   "site_access",
+  "sealed_records",
 ] as const;
 
 /** Tables without site_id, each covered by its own test below. */
@@ -52,6 +56,8 @@ const OTHER_TABLES = [
   "memberships",
   "cleaner_pins",
   "demo_requests",
+  "anchor_batches",
+  "anchor_job_lease",
 ] as const;
 
 let orgA: string, orgB: string, orgC: string, orgD: string;
@@ -98,6 +104,8 @@ beforeAll(async () => {
   siteA1 = await populateSite(a1, cleanerA, qaA);
   siteA2 = await populateSite(a2, cleanerA, qaA);
   siteB1 = await populateSite(b1, cleanerB, users.qaB.profileId!);
+  // Each fixture task is complete, so each site gets a sealed record.
+  for (const s of [siteA1, siteA2, siteB1]) await sealPendingRecords(admin, { siteId: s.siteId });
 });
 
 afterAll(async () => {
@@ -193,6 +201,41 @@ describe("tables without site_id", () => {
     for (const u of Object.values(users)) {
       const { data } = await u.client.from("cleaner_pins").select("*");
       expect(data ?? []).toEqual([]);
+    }
+  });
+
+  it("anchor_batches: visible only to users who can see a record in the batch", async () => {
+    const [rec] = await sql<{ id: string; record_hash: string }>(
+      `select id, record_hash from sealed_records where site_id = $1 and batch_id is null limit 1`,
+      [siteA1.siteId],
+    );
+    const { data: batchId, error } = await admin.rpc("create_anchor_batch", {
+      p_root: rec.record_hash,
+      p_chain: "base-sepolia",
+      p_items: [{ record_id: rec.id, proof: [] }],
+    });
+    expect(error).toBeNull();
+    const ids = async (c: Client) =>
+      ((await c.from("anchor_batches").select("id")).data ?? []).map((b) => b.id);
+    expect(await ids(users.adminA1.client)).toContain(batchId);
+    expect(await ids(users.contractorC.client)).toContain(batchId);
+    expect(await ids(users.qaB.client)).not.toContain(batchId);
+    expect(await ids(users.contractorD.client)).not.toContain(batchId);
+    expect(await ids(anonClient())).toEqual([]);
+    const upd = await users.adminA1.client
+      .from("anchor_batches")
+      .update({ status: "failed" })
+      .eq("id", batchId!)
+      .select();
+    expect(upd.data ?? []).toEqual([]);
+  });
+
+  it("anchor_job_lease: closed to app users and anonymous visitors", async () => {
+    for (const u of [...Object.values(users), { client: anonClient() }]) {
+      const { data } = await u.client.from("anchor_job_lease").select("*");
+      expect(data ?? []).toEqual([]);
+      const { error } = await u.client.rpc("acquire_anchor_lease", { p_holder: "x", p_seconds: 1 });
+      expect(error).not.toBeNull();
     }
   });
 
