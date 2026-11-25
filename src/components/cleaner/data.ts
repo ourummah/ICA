@@ -96,7 +96,7 @@ async function fetchCleanerData(siteId: string): Promise<CleanerData> {
   const { data: taskRows, error } = await supabase
     .from("tasks")
     .select(
-      `id, status, assigned_profile_id,
+      `id, status, assigned_profile_id, reclean_of_task_id,
        equipment(name, photo_url, zones(name, risk_level, sort_order)),
        ssops(ssop_steps(id, step_no, step_type, title_en, instructions_en, icon, dilution, dwell_minutes,
          photo_required, atp_required, atp_pass_max, chemicals(name)))`,
@@ -108,6 +108,7 @@ async function fetchCleanerData(siteId: string): Promise<CleanerData> {
     id: t.id,
     status: t.status,
     assignedProfileId: t.assigned_profile_id,
+    isReclean: !!t.reclean_of_task_id,
     equipmentName: t.equipment?.name ?? "",
     equipmentPhotoUrl: t.equipment?.photo_url ?? null,
     zoneName: t.equipment?.zones?.name ?? "",
@@ -130,7 +131,13 @@ async function fetchCleanerData(siteId: string): Promise<CleanerData> {
         atpPassMax: s.atp_pass_max,
       })),
   }));
-  tasks.sort((a, b) => a.zoneOrder - b.zoneOrder || a.equipmentName.localeCompare(b.equipmentName));
+  // Re-cleans first: the supervisor is waiting on them.
+  tasks.sort(
+    (a, b) =>
+      Number(b.isReclean) - Number(a.isReclean) ||
+      a.zoneOrder - b.zoneOrder ||
+      a.equipmentName.localeCompare(b.equipmentName),
+  );
 
   const records: RecordSummary[] = [];
   if (tasks.length) {

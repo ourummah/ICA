@@ -38,11 +38,12 @@
     "none": "No tasks for you tonight. Ask your supervisor.",
     "noShift": "There is no shift planned yet.",
     "stepsDone": "{done} of {total} steps",
+    "reclean": "Re-clean",
     "status": {
       "pending": "Not started",
       "in_progress": "In progress",
       "completed": "Done",
-      "reclean_required": "Re-clean",
+      "reclean_required": "Sent back for re-clean",
       "verified": "Checked"
     },
     "risk": {

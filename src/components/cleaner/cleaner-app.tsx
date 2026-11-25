@@ -123,6 +123,20 @@ function App({
     };
   }, [device.siteId, db]);
 
+  // Pick up re-cleans and new assignments while the cleaner is looking at the list.
+  useEffect(() => {
+    if (screen.name !== "tasks") return;
+    const id = setInterval(() => {
+      if (navigator.onLine) void refresh();
+    }, 15_000);
+    return () => clearInterval(id);
+  }, [screen.name, refresh]);
+
+  const backToTasks = () => {
+    setScreen({ name: "tasks" });
+    if (navigator.onLine) void refresh();
+  };
+
   const signIn = (c: Cleaner) => {
     setCleaner(c);
     setLocale(c.language);
@@ -275,14 +289,14 @@ function App({
               fastTimers={fastTimers}
               saving={saving}
               error={saveError}
-              onBack={() => setScreen({ name: "tasks" })}
+              onBack={backToTasks}
               onComplete={completeStep}
             />
           ) : (
-            <CompleteScreen onBack={() => setScreen({ name: "tasks" })} />
+            <CompleteScreen onBack={backToTasks} />
           )
         ) : null}
-        {screen.name === "complete" ? <CompleteScreen onBack={() => setScreen({ name: "tasks" })} /> : null}
+        {screen.name === "complete" ? <CompleteScreen onBack={backToTasks} /> : null}
       </main>
       <footer className="px-4 py-2 text-center text-xs text-muted-foreground">
         {device.siteName} · {device.label}

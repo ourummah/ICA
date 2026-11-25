@@ -7,6 +7,8 @@ export const stepRecordBatchSchema = z.object({
     .array(z.object({ payload: stepRecordPayloadSchema, payload_hash: z.string().regex(/^[0-9a-f]{64}$/) }))
     .min(1)
     .max(100),
+  /** The device's clock when it sent the batch, for the clock-skew check. */
+  device_time: z.iso.datetime({ offset: true }).optional(),
 });
 
 export type SyncOutcome =

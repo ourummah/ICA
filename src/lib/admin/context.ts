@@ -2,20 +2,33 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 
+import type { Database } from "@/lib/database.types";
 import { createClient } from "@/lib/supabase/server";
+
+export type MemberRole = Database["public"]["Enums"]["member_role"];
 
 export interface AdminContext {
   supabase: Awaited<ReturnType<typeof createClient>>;
   profileId: string;
   displayName: string;
   site: { id: string; name: string; timezone: string; orgId: string };
+  /** The caller's roles (of those asked for) at this site. */
+  roles: MemberRole[];
 }
 
 /**
  * Resolves the signed-in site admin and the site they manage. Redirects to sign-in or the app
  * home if the user isn't a site admin. Multi-site admins get their first site (site switcher later).
  */
-export async function requireSiteAdmin(): Promise<AdminContext> {
+export function requireSiteAdmin(): Promise<AdminContext> {
+  return requireSiteRole(["site_admin"]);
+}
+
+/**
+ * Resolves a signed-in staff member who holds one of `allowed` roles, and their first such site.
+ * Redirects to sign-in, or to the app home if they hold none of the roles.
+ */
+export async function requireSiteRole(allowed: MemberRole[]): Promise<AdminContext> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,9 +44,9 @@ export async function requireSiteAdmin(): Promise<AdminContext> {
 
   const { data: memberships } = await supabase
     .from("memberships")
-    .select("site_id, org_id")
+    .select("site_id, org_id, role")
     .eq("profile_id", profile.id)
-    .eq("role", "site_admin");
+    .in("role", allowed);
   if (!memberships?.length) redirect("/app");
 
   const siteIds = memberships.map((m) => m.site_id).filter((id): id is string => !!id);
@@ -52,6 +65,13 @@ export async function requireSiteAdmin(): Promise<AdminContext> {
     profileId: profile.id,
     displayName: profile.display_name,
     site: { id: site.id, name: site.name, timezone: site.timezone, orgId: site.org_id },
+    roles: [
+      ...new Set(
+        memberships
+          .filter((m) => m.site_id === site.id || (!m.site_id && m.org_id === site.org_id))
+          .map((m) => m.role),
+      ),
+    ],
   };
 }
 

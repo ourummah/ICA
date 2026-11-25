@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getDevice } from "@/lib/device/server";
+import { raiseExceptions, type SavedRecord } from "@/lib/exceptions/raise";
 import { payloadHash } from "@/lib/records/payload";
 import { stepRecordBatchSchema, type SyncOutcome } from "@/lib/records/sync-schemas";
 
@@ -17,7 +18,9 @@ export async function POST(request: Request) {
   if (!parsed.success)
     return NextResponse.json({ error: "Invalid batch", issues: parsed.error.issues }, { status: 400 });
 
+  const serverTime = new Date();
   const outcomes: SyncOutcome[] = [];
+  const saved: SavedRecord[] = [];
   for (const { payload, payload_hash } of parsed.data.records) {
     const id = payload.client_record_id;
     if ((await payloadHash(payload)) !== payload_hash) {
@@ -53,28 +56,44 @@ export async function POST(request: Request) {
       supersedesId = prior.id;
     }
 
-    const { error } = await supabase.from("step_records").insert({
-      client_record_id: id,
-      task_id: payload.task_id,
-      ssop_step_id: payload.ssop_step_id,
-      profile_id: payload.profile_id,
-      site_id: device.siteId,
-      device_id: device.id,
-      result: payload.result,
-      skip_reason: payload.skip_reason,
-      note_original: payload.note_original,
-      note_language: payload.note_language,
-      atp_value: payload.atp_value,
-      timer_started_at: payload.timer_started_at,
-      timer_ended_at: payload.timer_ended_at,
-      device_started_at: payload.device_started_at,
-      device_completed_at: payload.device_completed_at,
-      payload_hash,
-      supersedes_id: supersedesId,
-    });
-    if (!error) outcomes.push({ client_record_id: id, status: "saved" });
-    else if (error.code === "23505") outcomes.push({ client_record_id: id, status: "duplicate" });
+    const { data: inserted, error } = await supabase
+      .from("step_records")
+      .insert({
+        client_record_id: id,
+        task_id: payload.task_id,
+        ssop_step_id: payload.ssop_step_id,
+        profile_id: payload.profile_id,
+        site_id: device.siteId,
+        device_id: device.id,
+        result: payload.result,
+        skip_reason: payload.skip_reason,
+        note_original: payload.note_original,
+        note_language: payload.note_language,
+        atp_value: payload.atp_value,
+        timer_started_at: payload.timer_started_at,
+        timer_ended_at: payload.timer_ended_at,
+        device_started_at: payload.device_started_at,
+        device_completed_at: payload.device_completed_at,
+        payload_hash,
+        supersedes_id: supersedesId,
+      })
+      .select("id")
+      .single();
+    if (!error) {
+      outcomes.push({ client_record_id: id, status: "saved" });
+      saved.push({ id: inserted.id, siteId: device.siteId, payload });
+    } else if (error.code === "23505") outcomes.push({ client_record_id: id, status: "duplicate" });
     else outcomes.push({ client_record_id: id, status: "rejected", error: error.message });
+  }
+
+  // SPEC F4: exceptions are raised on the server as records arrive. A failure here must not make
+  // the device resend records that are already saved, so it is logged, not returned.
+  if (saved.length) {
+    await raiseExceptions(supabase, saved, {
+      deviceTime: parsed.data.device_time,
+      serverTime,
+      secondsPerDwellMinute: process.env.DEMO_FAST_TIMERS === "true" ? 1 : 60,
+    }).catch((e: unknown) => console.error("exceptions engine failed", e));
   }
 
   return NextResponse.json({ outcomes, server_time: new Date().toISOString() });

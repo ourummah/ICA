@@ -37,6 +37,8 @@ export interface Task {
   id: string;
   status: Enums["task_status"];
   assignedProfileId: string | null;
+  /** A re-clean requested by the supervisor. Optional so tasks cached before M5 still load. */
+  isReclean?: boolean;
   equipmentName: string;
   equipmentPhotoUrl: string | null;
   zoneName: string;
