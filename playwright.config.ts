@@ -29,5 +29,6 @@ export default defineConfig({
     url: `http://localhost:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    env: { DEMO_FAST_TIMERS: "true" },
   },
 });

@@ -37,9 +37,21 @@
 - New database functions: `create_ssop_draft`, `activate_ssop`, `move_ssop_step`, `delete_ssop_step`, `replace_ssop_steps`, `ensure_shift` (all check the caller's role), plus one-draft-per-equipment.
 - Tests: 148 database tests; unit tests for CSV parsing and admin schemas; e2e for the F1 acceptance check (new equipment + 8-step SSOP via CSV + assigned tonight, timed under 5 minutes), the builder, and adding a cleaner. E2E resets the demo tenant first (`e2e/global-setup.ts`).
 
+### M3: Cleaner app (online first)
+
+- Device registration at `/app/device`: a site admin signs in on the phone, names it, and the browser becomes that site's device (its own auth user; the admin is signed out on that phone). Linked from the app home for site admins.
+- Cleaner app at `/app/cleaner` (client-rendered): name tiles, 4-digit PIN keypad (5 wrong tries locks for 30 s), language picker (flag + native name, saved per cleaner), consent notice on first sign-in, tonight's task list (yours first, others below), one step per screen.
+- Step screen: big icon, title and instructions, chemical and strength in a highlighted box, photo capture (compressed to 1600px JPEG ~0.7, SHA-256 on the device), dwell/contact-time countdown that survives refresh and vibrates/beeps at the end ("Finish early" needs a second tap), ATP keypad with "Fail — re-clean" guidance, optional note, "Can't do this step" with reasons.
+- Header on every screen: cleaner's name, save status, language, sign out.
+- Server routes: `POST /api/sync/step-records` (batch; recomputes `payload_hash`, idempotent by `client_record_id`) and `POST /api/sync/photos` (recomputes SHA-256, stores under `<site>/<task>/`, idempotent by `client_photo_id`). M4's outbox will use these same routes.
+- Task status is derived on the server from step records (pending → in progress → completed); devices' `last_seen_at` updates on sync.
+- next-intl for every cleaner string (`src/messages/en.json`); `tl` and `id` fall back to English until M8.
+- `DEMO_FAST_TIMERS=true` turns dwell minutes into seconds (e2e runs with it on).
+- Tests: 153 database tests; unit tests for payload hashing and i18n fallback; phone e2e that registers a device, signs in by PIN, completes the 10-step conveyor SSOP (3 photos, early dwell finish, a note, failed ATP), survives a refresh mid-task, then checks the records, photos, task status and hash chain in the database.
+
 ## Next
 
-- M3: cleaner PWA (device registration, PIN sign-in, task list, guided steps, photos, timers, ATP), online first.
+- M4: offline: service worker, Dexie outbox, sync indicator ("Saved on device — N items waiting to sync").
 
 ## Decisions
 
@@ -60,6 +72,10 @@
 - **One site per admin screen.** An admin with several sites manages the first one (alphabetical) for now; a site switcher can come later.
 - **Staff get a temporary password set by the admin** rather than an emailed invite, since email delivery isn't configured yet.
 - **Equipment can't be deleted** from the admin screens yet: once it has records, the append-only rules would block it anyway.
+
+- **The device is the trust boundary for cleaner identity.** The PIN is checked when a cleaner signs in on the device; records then carry that cleaner's `profile_id`. The server checks the device and site, not the PIN, on each record. This is what makes offline sign-in possible.
+- **Step text is shown in English for now.** SSOP steps are written in English; UI labels go through next-intl. Translating SSOP content per language is out of scope for the MVP (SPEC F3 says English fallback).
+- **An ATP reading over the limit is stored as result `failed`** (with the reading), so failures are obvious in records and the exceptions engine (M5).
 
 ## Known gaps
 
