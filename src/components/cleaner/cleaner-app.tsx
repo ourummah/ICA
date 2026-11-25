@@ -216,6 +216,7 @@ function App({
       device_started_at: r.startedAt,
       device_completed_at: new Date().toISOString(),
       supersedes_client_record_id: null,
+      photo_sha256: r.photo?.sha256 ?? null,
     };
     try {
       // Device first, network later (SPEC 7): the step is safe once this resolves.

@@ -151,8 +151,21 @@
 - `vercel.json` runs functions in Sydney (`syd1`), next to the database.
 - Step-by-step guide in `docs/DEPLOY.md`.
 
+### Blockchain-verified audit trail (ICA_AUDIT_TRAIL_SPEC v0.1, details in `docs/AUDIT_TRAIL.md`)
+
+- **Sealed records.** Each finished clean (task) is sealed into `sealed_records`: RFC 8785 canonical JSON built on the server, `record_hash = sha256` of the exact bytes computed in Postgres by `seal_record()`. Sealing runs after each sync and before every nightly batch.
+- **Immutable.** A trigger rejects any update or delete for every role (API, service role, direct SQL); only `batch_id`/`merkle_proof` can be set once. Corrections (a superseding step record or a late photo) seal an `amendment` that references the previous seal.
+- **Photo integrity.** The phone now puts the photo's SHA-256 in the step record (`photo_sha256`), so the record commits to the photo before the upload. The upload route rejects bytes that don't match it, and logs mismatches as security events in the site audit chain.
+- **Site seal chain.** Every seal links to the previous seal's hash (per-site lock) and is also written into the existing `audit_events` hash chain. `verify_seal_chain()` catches gaps, deletions (even of the latest seal) and altered bytes. The supervisor board shows "Record seals: N linked, no gaps" or a red alert.
+- **Daily Merkle batches on Base Sepolia.** Vercel Cron (`/api/cron/anchor`, 00:15 AEST) seals, batches every unbatched record into one Merkle tree (sorted pairs, odd node promoted), stores each proof, and calls `ICAAnchor.anchor(batchId, root, count)`. Transactions are signed and saved before broadcast; unconfirmed after 10 minutes they're replaced with a 25% higher fee; after 5 attempts the batch fails with an email alert; failed batches can be retried. Low-balance and stuck-batch alerts. A lease stops overlapping runs.
+- **Verification.** Public `/verify/<id>` (site alias, shift date, result counts, hashes, Basescan link), `GET /api/verify/<id>`, staff-only bundle download, `/verify` bundle checker and `POST /api/verify/bundle` (re-checks on-chain), and the zero-dependency `verifier/verify-ica.mjs` with its README.
+- **Screens.** Task page seal panel (Verified ✓ / pending, history, links), admin "Record seals" page (wallet, contract, batches, Seal and anchor now, Retry), and a seal line with QR code per task in the audit pack PDF.
+- **Deploy.** "Deploy anchor contract" GitHub Actions workflow (Base Sepolia only) and `docs/DEPLOY.md` section 6.
+- Tests: 98 unit tests (deterministic hashing, JCS against the verifier, Merkle proofs, contract bytecode, calldata holds only batch/root/count, PDF with QR), 215 database tests including 27 for the audit trail that anchor on a local Anvil chain (fee-bump replacement, failure after 5 attempts plus retry, alerts, standalone verifier PASS/FAIL), RLS for the 3 new tables, and the supervisor e2e checks the seals and verify page.
+
 ## Next
 
+- Audit trail: Max sets up the anchor wallet, test ETH, contract and Vercel variables (`docs/DEPLOY.md` section 6). Base mainnet and OpenTimestamps come later.
 - Deploy (Max sets up Supabase, GitHub secrets and Vercel per `docs/DEPLOY.md`), then rehearse SPEC section 12 on a real phone and fix rough edges.
 
 ## Decisions
@@ -209,10 +222,20 @@
 - **Reset demo recreates every demo account and device**, because it reuses the seed. Phones must be registered again after a reset; do it before a demo, not during.
 - **Database deploys run from GitHub Actions**, so no one needs the Supabase CLI on their own computer.
 
+- **The sealed "audit record" is one clean (task).** ICA has no separate audit form; a finished clean with its step records, photo hashes and chemicals is what customers and auditors check. People appear as ids only.
+- **One anchor batch per day across all customers** (spec open question 2): cheapest, and each record still has its own proof.
+- **Public verify page shows site alias, shift date and pass/fail counts** (open question 3). The full record (bundle) needs a staff sign-in. The site alias is derived from the site id; there is no alias setting yet.
+- **Certificates not built** (open question 4); the sealing and anchoring code is reusable for another record schema.
+- **Hashing happens in Postgres, canonicalisation in TypeScript.** The database checks the chain head, hashes the exact text and enforces immutability, so no app path can store a record whose hash doesn't match.
+- **Base Sepolia only.** The mainnet switch needs a funded wallet, a mainnet contract and Max's go-ahead. The anchor key lives only in Vercel and GitHub secrets.
+- **Contract compiled with solc 0.8.38, optimizer 200 runs, EVM cancun.** A unit test checks the committed bytecode matches the source.
+- Anvil (`@foundry-rs/anvil`) is a dev dependency so database tests anchor on a real local chain. The build environment's proxy blocks `sepolia.base.org`, so nothing was sent to the real testnet from here.
+
 ## Known gaps
 
 - E2E tests share one seeded tenant per run, so `--repeat-each` fails on the second pass (tasks are already completed). Run `npm run seed` between repeated runs.
 - If inserting exceptions fails after the records were saved, the error is logged and those records get no exceptions (the device doesn't resend saved records).
 - Tagalog and Bahasa Indonesia UI strings are unreviewed drafts.
 - AI photo flags are a stretch goal (SPEC S1, after M10) and are not built.
+- Audit trail: no OpenTimestamps second anchor yet; Supabase Storage has no object versioning or Object Lock for photo originals (they are never overwritten); the standalone verifier should be published as its own public repository.
 - WebP photos (only possible from desktop uploads) are listed by hash in the PDF without a thumbnail; the PDF library can't draw WebP.

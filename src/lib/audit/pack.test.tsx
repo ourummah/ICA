@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { renderToBuffer } from "@react-pdf/renderer";
+import QRCode from "qrcode";
 import { describe, expect, it } from "vitest";
 
 import { csvField, packToCsv } from "./csv";
@@ -147,6 +148,24 @@ describe("pdf", () => {
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
     expect(pdf.length).toBeGreaterThan(5000);
     expect(Date.now() - started).toBeLessThan(15_000);
+  });
+
+  it("renders each task's seal with a QR code to its verify page", async () => {
+    const pack = samplePack();
+    const verifyUrl = "https://ica.example/verify/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    pack.tasks[0].seal = {
+      recordId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      recordHash: "ab".repeat(32),
+      versions: 2,
+      anchoredAt: "2026-11-26T03:15:00Z",
+      verifyUrl,
+      qrPng: await QRCode.toBuffer(verifyUrl, { margin: 1, width: 120 }),
+    };
+    pack.seals = { sealed: 1, anchored: 1, chain: { records: 4, verified: true } };
+    const plain = await renderToBuffer(<AuditPackDocument pack={samplePack()} />);
+    const pdf = await renderToBuffer(<AuditPackDocument pack={pack} />);
+    expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(pdf.length).toBeGreaterThan(plain.length);
   });
 
   it("renders a failed integrity check and an empty period", async () => {

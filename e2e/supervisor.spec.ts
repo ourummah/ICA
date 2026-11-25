@@ -150,4 +150,22 @@ test("F4/F5: exceptions turn the zone red live; a re-clean turns it green", asyn
   const mincerRows = csv.split("\r\n").filter((l) => l.includes("Mincer 1"));
   expect(mincerRows).toHaveLength(18); // two cleans of 9 steps
   expect(mincerRows.some((l) => l.includes(",failed,") && l.includes(",200,150,"))).toBe(true);
+
+  // Both Mincer 1 cleans are sealed after they sync (docs/AUDIT_TRAIL.md), with photo hashes.
+  const sealedMincer = () =>
+    query<{ id: string; canonical_text: string }>(
+      `select r.id, r.canonical_text from sealed_records r join tasks t on t.id = r.task_id
+       join equipment e on e.id = t.equipment_id where e.name = 'Mincer 1' order by r.site_seq`,
+    );
+  await expect.poll(async () => (await sealedMincer()).length, { timeout: 20_000 }).toBeGreaterThanOrEqual(2);
+  const [firstSeal] = await sealedMincer();
+  expect(
+    JSON.parse(firstSeal.canonical_text).items.some((i: { photo_hashes: string[] }) => i.photo_hashes.length),
+  ).toBe(true);
+  await page.goto("/app/supervisor");
+  await expect(page.locator('[data-seal-chain="ok"]')).toBeVisible();
+  await page.goto(`/verify/${firstSeal.id}`);
+  await expect(page.getByRole("status")).toContainText("Sealed, pending anchoring");
+  await expect(page.getByText(firstSeal.id)).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText("Mincer");
 });

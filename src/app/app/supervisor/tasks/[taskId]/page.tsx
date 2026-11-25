@@ -4,6 +4,7 @@ import { Suspense } from "react";
 
 import { Card } from "@/components/ui/card";
 import { RecleanForm, ResolveForm } from "@/components/supervisor/exception-actions";
+import { SealPanel } from "@/components/seal/seal-panel";
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
 import { NoteBlock } from "@/components/supervisor/note-block";
 import { ExceptionBadge, TaskStatusBadge } from "@/components/supervisor/status";
@@ -57,7 +58,7 @@ async function TaskDetail({ taskId }: { taskId: string }) {
     .maybeSingle();
   if (!task) notFound();
 
-  const [{ data: records }, exceptions, { data: recleans }] = await Promise.all([
+  const [{ data: records }, exceptions, { data: recleans }, { data: seals }] = await Promise.all([
     supabase
       .from("step_records")
       .select(
@@ -70,6 +71,13 @@ async function TaskDetail({ taskId }: { taskId: string }) {
       .order("server_received_at"),
     loadExceptions(supabase, { siteId: site.id, taskIds: [task.id] }),
     supabase.from("tasks").select("id, status").eq("reclean_of_task_id", task.id),
+    supabase
+      .from("sealed_records")
+      .select(
+        "id, record_type, record_hash, sealed_at, anchor_batches(id, status, tx_hash, chain, block_timestamp)",
+      )
+      .eq("task_id", task.id)
+      .order("site_seq"),
   ]);
   const photoUrls = await signPhotoUrls(
     supabase,
@@ -125,6 +133,8 @@ async function TaskDetail({ taskId }: { taskId: string }) {
         </div>
         <LiveRefresh siteId={site.id} />
       </div>
+
+      <SealPanel seals={seals ?? []} timezone={site.timezone} />
 
       {taskLevel.length ? (
         <ul className="flex flex-col gap-2" aria-label="Task exceptions">

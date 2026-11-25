@@ -1,8 +1,20 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 
 import { getDevice } from "@/lib/device/server";
 import { sha256Hex } from "@/lib/records/payload";
 import { MAX_PHOTO_BYTES, PHOTO_TYPES, photoMetaSchema } from "@/lib/records/sync-schemas";
+import { sealInBackground } from "@/lib/seal/background";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+/** Hash mismatches are security events in the site's audit chain (docs/AUDIT_TRAIL.md). */
+async function logMismatch(siteId: string, detail: Record<string, string | null>) {
+  const { error } = await createAdminClient().rpc("log_security_event", {
+    p_site_id: siteId,
+    p_kind: "photo_hash_mismatch",
+    p_detail: detail,
+  });
+  if (error) console.error("could not log photo hash mismatch", error.message);
+}
 
 /**
  * Accepts one photo for a synced step record. The server recomputes the SHA-256 and rejects the
@@ -31,18 +43,44 @@ export async function POST(request: Request) {
   if (existing) return NextResponse.json({ status: "duplicate" });
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if ((await sha256Hex(bytes)) !== meta.data.sha256) {
+  const actual = await sha256Hex(bytes);
+  if (actual !== meta.data.sha256) {
+    after(() =>
+      logMismatch(device.siteId, {
+        reason: "bytes do not match the hash taken on the device",
+        device_id: device.id,
+        client_photo_id: meta.data.client_photo_id,
+        expected_sha256: meta.data.sha256,
+        actual_sha256: actual,
+      }),
+    );
     return NextResponse.json({ status: "rejected", error: "sha256 mismatch" }, { status: 422 });
   }
 
   const { data: record } = await supabase
     .from("step_records")
-    .select("id, task_id")
+    .select("id, task_id, photo_sha256")
     .eq("client_record_id", meta.data.client_record_id)
     .eq("site_id", device.siteId)
     .maybeSingle();
   if (!record)
     return NextResponse.json({ status: "retry", error: "step record not synced yet" }, { status: 409 });
+  // A record that committed to a photo hash accepts only that photo.
+  if (record.photo_sha256 && record.photo_sha256 !== actual) {
+    after(() =>
+      logMismatch(device.siteId, {
+        reason: "photo is not the one its step record committed to",
+        device_id: device.id,
+        client_photo_id: meta.data.client_photo_id,
+        expected_sha256: record.photo_sha256,
+        actual_sha256: actual,
+      }),
+    );
+    return NextResponse.json(
+      { status: "rejected", error: "photo does not match its record" },
+      { status: 422 },
+    );
+  }
 
   const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
   const path = `${device.siteId}/${record.task_id}/${meta.data.client_photo_id}.${ext}`;
@@ -63,5 +101,7 @@ export async function POST(request: Request) {
   });
   if (error && error.code !== "23505")
     return NextResponse.json({ status: "rejected", error: error.message }, { status: 500 });
+  // A photo that arrives after its clean was sealed without it leads to an amendment.
+  if (!error) after(() => sealInBackground(device.siteId));
   return NextResponse.json({ status: error ? "duplicate" : "saved" });
 }

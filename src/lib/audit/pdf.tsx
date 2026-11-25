@@ -112,6 +112,7 @@ function TaskDetail({ task, pack }: { task: PackTask; pack: AuditPack }) {
           cleaner {task.assignedName ?? "unassigned"} · status {task.status.replaceAll("_", " ")}
           {exceptions.length ? ` · ${exceptions.length} exception(s)` : ""}
         </Text>
+        <SealLine task={task} tz={tz} />
       </View>
       {task.records.length === 0 ? (
         <Text style={[s.muted, { marginTop: 3 }]}>No step records received.</Text>
@@ -165,6 +166,30 @@ function TaskDetail({ task, pack }: { task: PackTask; pack: AuditPack }) {
           ])}
         />
       )}
+    </View>
+  );
+}
+
+/** The task's seal: shortened record hash, anchor date and a QR code to its public verify page. */
+function SealLine({ task, tz }: { task: PackTask; tz: string }) {
+  const seal = task.seal;
+  if (!seal) return <Text style={[s.muted, { marginTop: 2 }]}>Seal: not sealed yet</Text>;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 3 }}>
+      {seal.qrPng ? (
+        // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
+        <Image style={{ width: 40, height: 40, marginRight: 6 }} src={{ data: seal.qrPng, format: "png" }} />
+      ) : null}
+      <View>
+        <Text>
+          Seal {seal.recordHash.slice(0, 16)}… ·{" "}
+          <Text style={{ color: seal.anchoredAt ? green : amber }}>
+            {seal.anchoredAt ? `anchored on Base ${siteTime(seal.anchoredAt, tz)}` : "pending anchoring"}
+          </Text>
+          {seal.versions > 1 ? ` · version ${seal.versions} (corrected)` : ""}
+        </Text>
+        {seal.verifyUrl ? <Text style={s.muted}>Verify: {seal.verifyUrl}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -239,6 +264,14 @@ export function AuditPackDocument({ pack }: { pack: AuditPack }) {
             Every record and change at this site is linked in a SHA-256 hash chain computed on the server. The
             whole chain for the site was re-checked when this pack was generated.
           </Text>
+          {pack.seals ? (
+            <Text style={{ marginTop: 6 }}>
+              {pack.seals.sealed} of {pack.tasks.length} clean(s) in this pack are sealed,{" "}
+              {pack.seals.anchored} anchored on the Base blockchain. Seal chain:{" "}
+              {pack.seals.chain.verified ? `${pack.seals.chain.records} seals linked, no gaps.` : "BROKEN."}{" "}
+              Scan a task&apos;s QR code to verify it independently.
+            </Text>
+          ) : null}
         </View>
         <Text style={[s.muted, { marginTop: 14 }]}>
           Times are shown in the site time zone. &quot;D&quot; is the time on the cleaner&apos;s device,

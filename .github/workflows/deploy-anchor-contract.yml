@@ -1,0 +1,28 @@
+name: Deploy anchor contract
+
+# Run by hand from the Actions tab: deploys contracts/ICAAnchor.sol to Base Sepolia from the
+# anchor wallet. Needs the ANCHOR_PRIVATE_KEY repository secret and some Base Sepolia test ETH in
+# that wallet. Prints the contract address to put in Vercel as ANCHOR_CONTRACT_ADDRESS.
+on:
+  workflow_dispatch:
+
+concurrency: deploy-anchor-contract
+
+jobs:
+  deploy:
+    name: Deploy to Base Sepolia
+    runs-on: ubuntu-latest
+    env:
+      ANCHOR_PRIVATE_KEY: ${{ secrets.ANCHOR_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check the secret is set
+        run: |
+          if [ -z "$ANCHOR_PRIVATE_KEY" ]; then echo "::error::Repository secret ANCHOR_PRIVATE_KEY is not set"; exit 1; fi
+      - name: Deploy
+        run: node scripts/deploy-anchor-contract.ts

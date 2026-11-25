@@ -2,6 +2,7 @@ import Link from "next/link";
 import { after } from "next/server";
 import { Suspense } from "react";
 
+import { SealChainIndicator } from "@/components/seal/seal-panel";
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
 import { BoardLabel, colourStyles, ReleaseLine } from "@/components/supervisor/status";
 import { formatSiteTime, requireSiteRole } from "@/lib/admin/context";
@@ -31,6 +32,7 @@ async function Board() {
   });
   const reds = open.filter((e) => e.severity === "red").length;
   const qa = shift ? await loadZoneQa(supabase, shift.id) : null;
+  const { data: sealChain } = await supabase.rpc("verify_seal_chain", { p_site_id: site.id });
 
   return (
     <>
@@ -46,6 +48,7 @@ async function Board() {
         </div>
         <LiveRefresh siteId={site.id} />
       </div>
+      <SealChainIndicator result={sealChain?.[0] ?? null} />
       <p className="rounded-md border border-border bg-muted px-4 py-3 text-sm">
         Cleaner phones save to the device first. Records and alerts appear here as each device syncs, so a
         phone with no signal shows no new activity until it reconnects.

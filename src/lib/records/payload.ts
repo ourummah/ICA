@@ -21,6 +21,16 @@ export const stepRecordPayloadSchema = z.object({
   device_started_at: isoTime,
   device_completed_at: isoTime,
   supersedes_client_record_id: z.uuid().nullable(),
+  /**
+   * SHA-256 of the step's photo, taken on the device when the photo was captured. Commits the
+   * record to those exact bytes before the upload arrives. Optional so records saved by older
+   * app versions still hash the same.
+   */
+  photo_sha256: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .nullable()
+    .optional(),
 });
 
 export type StepRecordPayload = z.infer<typeof stepRecordPayloadSchema>;
