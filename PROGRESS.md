@@ -13,9 +13,22 @@
 - Prettier, ESLint (Next config), `.env.example` with every variable from SPEC section 14.
 - GitHub Actions CI: lint, typecheck, format check, unit tests, build, e2e.
 
+### M1: Schema, RLS, hash chain, seed, auth
+
+- Migrations in `supabase/migrations/`: every table from SPEC section 6, enums, composite `(id, site_id)` foreign keys so a row can never point at a parent in another site.
+- RLS on every table (`app.*` helper functions). Site visibility: site memberships, org-wide memberships (processor-owned sites, or contractor sites granted via `site_access`), and registered devices.
+- Append-only `step_records`, `audit_events`, `note_translations`: UPDATE/DELETE revoked from app roles and blocked by trigger for everyone.
+- Per-site hash chain on `audit_events`, computed in a trigger under a per-site advisory lock. Every step record is written into the chain (its `chain_hash` is the link's hash), and other site changes are audited by trigger. `verify_chain(site_id, from, to)` re-walks the chain and checks step records against their chained snapshots.
+- SSOP versions: steps only editable while draft; active can't go back to draft; retired can't be reactivated.
+- Cleaner PINs: bcrypt in `cleaner_pins`, `set_cleaner_pin` (service role), `verify_cleaner_pin` and `device_cleaners` (registered device only).
+- Private `photos` storage bucket with site-folder policies.
+- Staff email sign-in at `/app/login`, session refresh in `src/proxy.ts`, signed-in home showing roles.
+- Demo seed (`npm run seed`): Southern Cross Meats (Demo), 4 zones, 8 equipment items with active SSOPs (conveyor SSOP from SPEC section 9), 5 chemicals, 3 staff, 4 cleaners with PINs, tonight's shift with 8 tasks. Re-running resets first via `reset_demo_data()`.
+- Tests: `npm run test:db` (138 tests: RLS per table and per role, append-only, chain tamper detection, PINs, seed). E2E for staff sign-in.
+
 ## Next
 
-- M1: schema, RLS, hash-chain functions, seed script, auth (email for staff, PIN for cleaners).
+- M2: admin setup screens, SSOP builder with versioning, CSV import.
 
 ## Decisions
 
@@ -24,6 +37,14 @@
 - **Supabase CLI 3.x uses `supabase/config.jsonc`** (not `config.toml`). The CLI is a dev dependency, so use `npx supabase ...` or the `db:*` npm scripts.
 - **`typecheck` runs `next typegen` first** so Next's generated route types (`LayoutProps`, `PageProps`) exist before `tsc`.
 - Playwright pinned to 1.63.0.
+- **`profiles.id` is its own UUID with a nullable `auth_user_id`** (SPEC says "id = auth user id or null"; a primary key can't be null). Staff have an auth user, PIN-only cleaners don't.
+- **PIN hashes live in a separate `cleaner_pins` table** with no RLS policies, so they can never be read through the API. Offline PIN checks (M4) will get hashes through a device-only function. Note: a 4-digit PIN hash is easy to brute-force once cached on a device; this is inherent to offline PIN sign-in.
+- **Shared devices sign in as their own Supabase auth user** linked from `devices.auth_user_id`. RLS treats a registered device as able to read its site and write step records and photos for it. The cleaner's identity is carried on each record (`profile_id`). Device registration UI comes in M3.
+- **Translations go in an append-only `note_translations` table** instead of `step_records.note_en`, so step records are never updated. Newest row wins; supervisor corrections are rows with `source = 'human'`.
+- **`audit_events.seq`** (assigned inside the chain trigger after taking the per-site lock) orders the chain, since timestamps can tie.
+- Added a few columns the features need: `organisations.is_demo` (demo reset), `devices.revoked_at`, `profiles.consent_accepted_at`/`photo_url`, `tasks.reclean_of_task_id`, `step_records.skip_reason`, `photos.client_photo_id` (idempotent upload), `exceptions.detail`, `releases.override_open_exceptions`.
+- **Demo staff password** defaults to `ica-demo-local` only against a local Supabase. Seeding a hosted project requires `DEMO_STAFF_PASSWORD`.
+- `package.json` is `"type": "module"` so `node scripts/seed.ts` runs with Node's built-in TypeScript support (no extra runner).
 
 ## Known gaps
 
