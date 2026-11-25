@@ -60,7 +60,8 @@ test("F1: new equipment with an 8-step SSOP, assigned tonight, in under 5 minute
 test("builder: add, reorder and version steps; the active version is read-only", async ({ page }) => {
   await signInAsAdmin(page);
   await page.goto("/app/admin/equipment");
-  await page.getByRole("link", { name: /Mincer 1/ }).click();
+  // Paddle mixer: its new version must not touch equipment other e2e tests clean.
+  await page.getByRole("link", { name: /Paddle mixer/ }).click();
   await expect(page.getByText(/SSOP v1\s*Active/)).toBeVisible();
   await expect(page.getByRole("button", { name: /Delete/ })).toHaveCount(0);
 
@@ -71,10 +72,10 @@ test("builder: add, reorder and version steps; the active version is read-only",
   await add.getByLabel("Step type").selectOption({ label: "Reassemble" });
   await add.getByLabel("Title").fill("Reassemble and guard on");
   await add.getByRole("button", { name: "Add step" }).click();
-  await expect(page.getByText("10. Reassemble and guard on")).toBeVisible();
-
-  await page.getByRole("button", { name: "Move step 10 up" }).click();
   await expect(page.getByText("9. Reassemble and guard on")).toBeVisible();
+
+  await page.getByRole("button", { name: "Move step 9 up" }).click();
+  await expect(page.getByText("8. Reassemble and guard on")).toBeVisible();
 
   await page.getByRole("button", { name: "Activate v2" }).click();
   await expect(page.getByText(/SSOP v2\s*Active/)).toBeVisible();

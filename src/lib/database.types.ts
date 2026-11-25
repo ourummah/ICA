@@ -677,6 +677,9 @@ isOneToOne: false
 "ensure_shift":
 { Args: { "p_shift_date": string,"p_site_id": string }; Returns: string
                            },
+"flag_overdue_tasks":
+{ Args: { "p_site_id": string }; Returns: number
+                           },
 "move_ssop_step":
 { Args: { "p_direction": number,"p_step_id": string }; Returns: undefined
                            },
@@ -688,10 +691,16 @@ isOneToOne: false
 "replace_ssop_steps":
 { Args: { "p_ssop_id": string,"p_steps": Json }; Returns: number
                            },
+"request_reclean":
+{ Args: { "p_note": string,"p_task_id": string }; Returns: string
+                           },
 "reset_demo_data":
 { Args: Record<PropertyKey, never>; Returns: {
               "auth_user_id": string
             }[]
+                           },
+"resolve_exception":
+{ Args: { "p_exception_id": string,"p_note": string }; Returns: undefined
                            },
 "set_cleaner_pin":
 { Args: { "p_pin": string,"p_profile_id": string }; Returns: undefined

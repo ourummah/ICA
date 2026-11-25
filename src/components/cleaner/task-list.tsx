@@ -33,6 +33,11 @@ function TaskCard({ task, records, onOpen }: { task: Task; records: RecordSummar
     >
       <Icon className="size-10 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1">
+        {task.isReclean ? (
+          <span className="mb-1 inline-flex items-center gap-1 rounded-full bg-status-red px-3 py-0.5 text-base font-bold text-white">
+            <TriangleAlert className="size-4" aria-hidden /> {t("reclean")}
+          </span>
+        ) : null}
         <span className="block text-xl font-semibold">{task.equipmentName}</span>
         <span className="block text-base text-muted-foreground">
           {task.zoneName} · {t(`risk.${task.riskLevel}`)}

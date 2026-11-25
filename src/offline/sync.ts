@@ -13,7 +13,7 @@ export const httpTransport: SyncTransport = {
     const res = await fetch("/api/sync/step-records", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ records: batch }),
+      body: JSON.stringify({ records: batch, device_time: new Date().toISOString() }),
     });
     if (!res.ok) throw new Error(`step-records ${res.status}`);
     return ((await res.json()) as { outcomes: SyncOutcome[] }).outcomes;

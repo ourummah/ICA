@@ -51,17 +51,24 @@ async function SignedInHome() {
           </li>
         ))}
       </ul>
-      {(memberships ?? []).some((m) => m.role === "site_admin") ? (
-        <Button asChild size="lg" variant="accent" className="self-start">
-          <Link href="/app/admin">Site setup</Link>
-        </Button>
-      ) : null}
+      <div className="flex flex-wrap gap-3">
+        {(memberships ?? []).some((m) => ["supervisor", "qa", "site_admin"].includes(m.role)) ? (
+          <Button asChild size="lg" variant="accent">
+            <Link href="/app/supervisor">Supervisor dashboard</Link>
+          </Button>
+        ) : null}
+        {(memberships ?? []).some((m) => m.role === "site_admin") ? (
+          <Button asChild size="lg" variant="outline">
+            <Link href="/app/admin">Site setup</Link>
+          </Button>
+        ) : null}
+      </div>
       {(memberships ?? []).some((m) => m.role === "site_admin") ? (
         <Link href="/app/device" className="text-sm text-accent underline">
           Register this phone or tablet as a cleaner device
         </Link>
       ) : null}
-      <p className="text-muted-foreground">Supervisor and QA dashboards arrive in later milestones.</p>
+      <p className="text-muted-foreground">QA pre-op inspection and release arrive in the next milestone.</p>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out

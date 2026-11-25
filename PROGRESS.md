@@ -61,9 +61,28 @@
 - Fixed: registering a device or signing out now ends the session on that browser only (it used to sign the admin out everywhere).
 - Tests: unit tests for the outbox (offline queueing, sync, retry without duplicates, rejection, photo cleanup), backoff and offline PIN checks against a real pgcrypto hash. **M4 acceptance e2e (`e2e/offline.spec.ts`)**: with `context.setOffline(true)`, signs in by PIN with no signal, completes the 9-step Slicer 2 SSOP (3 photos, a note, early dwell, ATP), shows "12 items waiting to sync", reloads while offline with progress intact, then goes online and checks 9 records with no duplicates, 3 photos, a completed task and an intact chain.
 
+### M5: Exceptions engine, supervisor dashboard, re-clean
+
+- Exceptions engine (`src/lib/exceptions/engine.ts`), run by the sync route right after it saves records: skipped step → `missed_step` red; ATP over the limit (or result `failed`) → `atp_fail` red; timer shorter than the dwell → `dwell_short` amber, red under 50%; device clock more than 5 min off the server at sync → `clock_skew` amber (devices now send their clock with each batch). Each exception links to its step record, so the supervisor sees the record and its photos.
+- "Not finished by shift end" → `missed_step` red, raised by `flag_overdue_tasks()` each time a dashboard page loads (idempotent).
+- Supervisor dashboard at `/app/supervisor`, linked from the app home for supervisors, QA and site admins:
+  - Zone board with a tile per zone: green (all done, nothing open), amber (not started, in progress or amber exceptions), red (open red exceptions or overdue). Each tile has an icon and words as well as colour.
+  - Click a zone to see its equipment, then a task to see each step's record: result, who did it, device and server times, ATP, timer, note, photos (signed URLs, 5 min) and exceptions.
+  - Exception queue at `/app/supervisor/exceptions` with status, severity and type filters.
+  - Actions: resolve with a note, or request a re-clean.
+  - A notice explains that alerts appear as devices sync.
+- Re-clean (`request_reclean()`): creates a new task for the same equipment on the same cleaner's list, using the SSOP version that is active now. The old task becomes `reclean_required` and its open exceptions are resolved with the supervisor's reason. On the cleaner app, re-cleans show first with a red "Re-clean" badge. The task list refreshes every 15 s and when the cleaner returns to it.
+- Live updates via Supabase Realtime on tasks, exceptions, step records and photos (RLS applies). The page re-renders on each change, with a 30 s refresh as a fallback, and shows a "Live" indicator.
+- Exceptions can only be changed through `resolve_exception()` / `request_reclean()`, so `resolved_by` is always the real user. Unique indexes allow one exception per type per record, and one overdue exception per task.
+- Tests:
+  - 164 database tests: resolve, re-clean, overdue, uniqueness, permissions across organisations and for devices, and the realtime publication.
+  - Unit tests for every engine rule and for the tile colours.
+  - **F4/F5 acceptance e2e (`e2e/supervisor.spec.ts`)**: a supervisor on a laptop and a cleaner on a phone. The cleaner cuts a dwell short and fails an ATP. The Mincing tile turns red with no page reload within 10 s of the sync, and both exceptions show on their steps with the photos. The supervisor requests a re-clean, the cleaner does it properly, and the tile turns green live.
+
 ## Next
 
-- M5: exceptions engine, supervisor dashboard with realtime, re-clean.
+- M6: pre-op inspection and QA release.
+- Translation review on the dashboard (part of F5) comes with M8, when there are AI translations to review.
 
 ## Decisions
 
@@ -92,8 +111,15 @@
 - **`cacheComponents` turned off** in `next.config.ts`. Serwist's Turbopack route needs route segment config that Cache Components doesn't allow; the app didn't rely on it.
 - **Language and consent changes made offline** are saved on the device straight away but only sent to the server the next time they change online. Low impact for the demo.
 
+- **The exceptions engine runs in the sync route, not in a database trigger**, because it needs the demo timer scale (`DEMO_FAST_TIMERS`). Exceptions are written with the service role after checking the device; no app user can insert them.
+- **A re-clean resolves the old task's open exceptions** with the supervisor's reason (recorded as resolved by them). The re-clean task replaces the old one on the zone tile. This is what lets the tile go green in demo step 8.
+- **A zone with tasks not started yet is amber ("Not started")**, matching demo step 6 ("amber/in progress with nothing new yet").
+- **Clock skew is flagged once per task per sync batch**, on the batch's first record for that task, rather than on every record.
+- **Overdue tasks are flagged when a dashboard loads**, not on a timer. No background job is needed for the demo; a cron can call `flag_overdue_tasks()` later.
+- The admin builder e2e now versions the Paddle mixer SSOP instead of Mincer 1, so it can't change the steps of tasks other tests clean.
+
 ## Known gaps
 
 - E2E tests share one seeded tenant per run, so `--repeat-each` fails on the second pass (tasks are already completed). Run `npm run seed` between repeated runs.
-
-- None yet.
+- If inserting exceptions fails after the records were saved, the error is logged and those records get no exceptions (the device doesn't resend saved records).
+- Translation review (F5) waits for M8.
