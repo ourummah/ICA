@@ -655,10 +655,28 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "device_cleaners":
+            "activate_ssop":
+{ Args: { "p_ssop_id": string }; Returns: undefined
+                           },
+"create_ssop_draft":
+{ Args: { "p_equipment_id": string }; Returns: string
+                           },
+"delete_ssop_step":
+{ Args: { "p_step_id": string }; Returns: undefined
+                           },
+"device_cleaners":
 { Args: Record<PropertyKey, never>; Returns: {
               "display_name": string,"has_consented": boolean,"photo_url": string,"preferred_language": Database["public"]['Enums']["ui_language"],"profile_id": string
             }[]
+                           },
+"ensure_shift":
+{ Args: { "p_shift_date": string,"p_site_id": string }; Returns: string
+                           },
+"move_ssop_step":
+{ Args: { "p_direction": number,"p_step_id": string }; Returns: undefined
+                           },
+"replace_ssop_steps":
+{ Args: { "p_ssop_id": string,"p_steps": Json }; Returns: number
                            },
 "reset_demo_data":
 { Args: Record<PropertyKey, never>; Returns: {

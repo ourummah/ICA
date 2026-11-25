@@ -1,0 +1,9 @@
+step_type,title,instructions,chemical,dilution,dwell_minutes,photo_required,atp_required,atp_pass_max
+prepare_isolate,Isolate and lock out,"Stop, isolate and lock out the saw. Remove product.",,,,yes,,
+dry_clean,Dry clean,Remove bone dust and scraps by hand.,,,,,,
+pre_rinse,Pre-rinse,Rinse top to bottom with warm water.,,,,,,
+foam,Apply foam,Foam all surfaces bottom to top.,Alkaline foam,Per label,,yes,,
+dwell,Let foam work,Leave foam on. Do not let it dry.,,,10,,,
+rinse,Rinse,Rinse until no foam remains.,,,,,,
+sanitise,Sanitise,Apply sanitiser at label strength.,Quat sanitiser,Per label,,,,
+atp_check,ATP swab,Swab the blade guard and enter the reading.,,,,,yes,150

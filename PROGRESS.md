@@ -26,9 +26,20 @@
 - Demo seed (`npm run seed`): Southern Cross Meats (Demo), 4 zones, 8 equipment items with active SSOPs (conveyor SSOP from SPEC section 9), 5 chemicals, 3 staff, 4 cleaners with PINs, tonight's shift with 8 tasks. Re-running resets first via `reset_demo_data()`.
 - Tests: `npm run test:db` (138 tests: RLS per table and per role, append-only, chain tamper detection, PINs, seed). E2E for staff sign-in.
 
+### M2: Admin setup and SSOP builder
+
+- Site admin area at `/app/admin` (linked from the app home for site admins): overview, zones, equipment, chemicals, people, devices, tonight's tasks.
+- People: add cleaners (name, language, PIN), reset PINs, remove a cleaner from the site (records kept); add staff (supervisor, QA, site admin) with a temporary password.
+- Devices: list, rename, revoke. Registering a device happens on the device itself, in M3.
+- SSOP builder per equipment item: start a draft (copies the latest version), add/edit/delete/reorder steps (step type sets the default icon), import steps from CSV (template at `/app/admin/ssop-template.csv`, every bad row reported with its row number), activate (previous version retired, history shown with who activated it and when).
+- Tonight's tasks: assign equipment with an active SSOP to a cleaner; creates tonight's shift (22:00 to 06:00 site time) if needed.
+- "Demo values — use your site's SSOP and chemical labels" note on the overview, chemicals and SSOP screens.
+- New database functions: `create_ssop_draft`, `activate_ssop`, `move_ssop_step`, `delete_ssop_step`, `replace_ssop_steps`, `ensure_shift` (all check the caller's role), plus one-draft-per-equipment.
+- Tests: 148 database tests; unit tests for CSV parsing and admin schemas; e2e for the F1 acceptance check (new equipment + 8-step SSOP via CSV + assigned tonight, timed under 5 minutes), the builder, and adding a cleaner. E2E resets the demo tenant first (`e2e/global-setup.ts`).
+
 ## Next
 
-- M2: admin setup screens, SSOP builder with versioning, CSV import.
+- M3: cleaner PWA (device registration, PIN sign-in, task list, guided steps, photos, timers, ATP), online first.
 
 ## Decisions
 
@@ -45,6 +56,10 @@
 - Added a few columns the features need: `organisations.is_demo` (demo reset), `devices.revoked_at`, `profiles.consent_accepted_at`/`photo_url`, `tasks.reclean_of_task_id`, `step_records.skip_reason`, `photos.client_photo_id` (idempotent upload), `exceptions.detail`, `releases.override_open_exceptions`.
 - **Demo staff password** defaults to `ica-demo-local` only against a local Supabase. Seeding a hosted project requires `DEMO_STAFF_PASSWORD`.
 - `package.json` is `"type": "module"` so `node scripts/seed.ts` runs with Node's built-in TypeScript support (no extra runner).
+
+- **One site per admin screen.** An admin with several sites manages the first one (alphabetical) for now; a site switcher can come later.
+- **Staff get a temporary password set by the admin** rather than an emailed invite, since email delivery isn't configured yet.
+- **Equipment can't be deleted** from the admin screens yet: once it has records, the append-only rules would block it anyway.
 
 ## Known gaps
 

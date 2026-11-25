@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -49,7 +50,12 @@ async function SignedInHome() {
           </li>
         ))}
       </ul>
-      <p className="text-muted-foreground">Dashboards for each role arrive in later milestones.</p>
+      {(memberships ?? []).some((m) => m.role === "site_admin") ? (
+        <Button asChild size="lg" variant="accent" className="self-start">
+          <Link href="/app/admin">Site setup</Link>
+        </Button>
+      ) : null}
+      <p className="text-muted-foreground">Supervisor and QA dashboards arrive in later milestones.</p>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out
