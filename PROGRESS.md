@@ -100,9 +100,28 @@
     4. An override with a reason releases the zone.
     5. The board shows "Released HH:MM by J. Smith", and the chain verifies.
 
+### M7: Audit pack
+
+- `/app/supervisor/audit` (QA, supervisor, site admin): choose shift dates and zones (none ticked = all), then download a PDF or a CSV.
+- PDF (`src/lib/audit/pdf.tsx`, @react-pdf/renderer, built-in Helvetica, no network fonts):
+  - Cover: site, period, zones, generated at/by. A **record-integrity box** from a fresh `verify_chain()` over the site's whole chain ("Record integrity verified: N records, no breaks", or a red failure with the first broken entry).
+  - Summary per shift and zone: status, tasks done, exceptions, pre-op, release.
+  - Detail per task:
+    - SSOP version, cleaner and status.
+    - Every step record with device time and server time, result, ATP against the limit, and timer.
+    - The note as written, plus the English with an "AI-translated" / "Supervisor-confirmed" label.
+    - Photo thumbnails with the SHA-256 prefix.
+  - Then exceptions with resolutions, pre-op inspections and release decisions.
+  - A footer on every page with the integrity result and page numbers.
+- CSV: one row per step record (UTC times, hashes, photo SHA-256s, translation and source), with a byte-order mark so Excel reads Tagalog and Bahasa notes. Fields that look like spreadsheet formulas are neutralised.
+- Data is read with the user's own client, so RLS applies. Thumbnails are capped at 200 per PDF to stay well under 15 s.
+- Tests:
+  - Unit tests for CSV escaping, filters and file names, and PDF rendering (with a photo, and with a failed chain).
+  - The F4/F5 e2e now also downloads the demo night's PDF (checked under 15 s) and CSV, which has both Mincer 1 cleans including the failed ATP.
+
 ## Next
 
-- M7: audit pack PDF/CSV with chain verification.
+- M8: translation via the Claude API, and the cleaner UI in Tagalog and Bahasa Indonesia.
 - Translation review on the dashboard (part of F5) comes with M8, when there are AI translations to review.
 
 ## Decisions
@@ -144,8 +163,13 @@
 - **QA can request re-cleans** (from a failed pre-op, SPEC F6), as well as supervisors and site admins.
 - Release and pre-op forms keep their inputs controlled, because React resets uncontrolled form fields after every action, which wiped the override box after a failed attempt.
 
+- **The audit pack period is by shift date** (the night a shift starts), so a 22:00 to 06:00 shift is never split across two days.
+- **The integrity check always walks the site's whole chain**, because a chain can only be verified from its start; the count shown is every chained entry for the site.
+- `@react-pdf/renderer` pinned to 4.9.0 (4.9.1 was a day old). Unit tests stub the `server-only` package (see `vitest.config.ts`).
+
 ## Known gaps
 
 - E2E tests share one seeded tenant per run, so `--repeat-each` fails on the second pass (tasks are already completed). Run `npm run seed` between repeated runs.
 - If inserting exceptions fails after the records were saved, the error is logged and those records get no exceptions (the device doesn't resend saved records).
 - Translation review (F5) waits for M8.
+- WebP photos (only possible from desktop uploads) are listed by hash in the PDF without a thumbnail; the PDF library can't draw WebP.
