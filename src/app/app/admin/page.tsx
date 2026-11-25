@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { ActionForm } from "@/components/action-form";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/form";
 import { requireSiteAdmin } from "@/lib/admin/context";
 
 import { DemoValuesNote } from "./demo-note";
+import { resetDemoTenant } from "./reset-demo";
 
 async function Overview() {
   const { supabase, site, displayName } = await requireSiteAdmin();
@@ -22,6 +26,8 @@ async function Overview() {
     .select("id", { count: "exact", head: true })
     .eq("site_id", site.id)
     .eq("status", "active");
+
+  const { data: org } = await supabase.from("organisations").select("is_demo").eq("id", site.orgId).single();
 
   const tiles = [
     { label: "Zones", value: zones, href: "/app/admin/zones" },
@@ -47,6 +53,27 @@ async function Overview() {
           </Link>
         ))}
       </div>
+      {org?.is_demo ? (
+        <Card className="flex flex-col gap-3 border-status-red/40">
+          <h2 className="font-semibold">Reset demo</h2>
+          <p className="text-sm text-muted-foreground">
+            Wipes every record in this demo plant and loads tonight&apos;s shift again, as if freshly seeded.
+            Everyone is signed out, and phones need to be registered again. Takes about 10 seconds.
+          </p>
+          <ActionForm
+            action={resetDemoTenant}
+            aria-label="Reset demo"
+            className="flex flex-wrap items-end gap-3"
+          >
+            <Field label="Type RESET to confirm">
+              <Input name="confirm" autoComplete="off" className="w-40" required />
+            </Field>
+            <Button type="submit" variant="destructive">
+              Reset demo
+            </Button>
+          </ActionForm>
+        </Card>
+      ) : null}
     </>
   );
 }

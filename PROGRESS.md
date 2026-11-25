@@ -144,9 +144,16 @@
 - Email notification through Resend when `RESEND_API_KEY` and `DEMO_REQUEST_NOTIFY_EMAIL` are set; sent after the response, so a mail problem never loses a request. Optional `DEMO_REQUEST_FROM_EMAIL` for a verified sender.
 - Tests: unit (validation, IP parsing, email formatting, Resend call with fetch mocked); e2e (landing page, how it works, a demo request saved after a validation error, privacy placeholder, bot and bad input handling) on desktop and phone.
 
+### M10 (in progress): Deploy
+
+- **Reset demo** on the admin home (demo organisations only, type RESET): re-runs the seed on the server with `DEMO_STAFF_PASSWORD`, then sends everyone to sign in again.
+- `Deploy database` GitHub Actions workflow (run by hand): links the hosted Supabase project, applies migrations, and optionally seeds. Uses repository secrets.
+- `vercel.json` runs functions in Sydney (`syd1`), next to the database.
+- Step-by-step guide in `docs/DEPLOY.md`.
+
 ## Next
 
-- M10: deploy to Vercel and rehearse the demo script on a real phone.
+- Deploy (Max sets up Supabase, GitHub secrets and Vercel per `docs/DEPLOY.md`), then rehearse SPEC section 12 on a real phone and fix rough edges.
 
 ## Decisions
 
@@ -198,6 +205,9 @@
 - **Website copy is written from SPEC.md**, because the ICA Sales Overview deck wasn't available. Check it against the deck before launch.
 - **Demo requests are rate limited only after validation**, so someone fixing a typo is never locked out; bots that fill the honeypot get a fake success.
 - **No admin screen for demo requests.** They are in the `demo_requests` table (Supabase dashboard) and in the notification email.
+
+- **Reset demo recreates every demo account and device**, because it reuses the seed. Phones must be registered again after a reset; do it before a demo, not during.
+- **Database deploys run from GitHub Actions**, so no one needs the Supabase CLI on their own computer.
 
 ## Known gaps
 
