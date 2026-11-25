@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { friendlyDbError, type ActionState } from "@/lib/admin/action-result";
 import { requireSiteAdmin, siteToday } from "@/lib/admin/context";
@@ -16,6 +17,7 @@ import {
   staffSchema,
   zoneSchema,
 } from "@/lib/admin/schemas";
+import { DEFAULT_PREOP_ITEMS } from "@/lib/qa/defaults";
 import { parseSsopCsv } from "@/lib/ssop/csv";
 import { ssopStepSchema } from "@/lib/ssop/step-schema";
 import { STEP_TYPES } from "@/lib/ssop/step-types";
@@ -369,4 +371,42 @@ export async function assignTask(_: ActionState, fd: FormData): Promise<ActionSt
   if (error) return { errors: [friendlyDbError(error)] };
   revalidatePath("/app/admin/tasks");
   return { ok: true, message: existing ? "Assignment updated." : "Added to tonight's shift." };
+}
+
+// ---------------------------------------------------------------------------
+// Pre-op checklist items (SPEC F6)
+// ---------------------------------------------------------------------------
+const preopItemSchema = z.object({
+  label: z.string().trim().min(1, "Write the checklist item.").max(200),
+  sort_order: z.coerce.number().int().min(0).max(1000).default(0),
+});
+
+export async function addPreopItem(_: ActionState, fd: FormData): Promise<ActionState> {
+  const parsed = preopItemSchema.safeParse(fields(fd));
+  if (!parsed.success) return issues(parsed.error);
+  const { supabase, site } = await requireSiteAdmin();
+  const { error } = await supabase.from("preop_items").insert({ site_id: site.id, ...parsed.data });
+  if (error) return { errors: [friendlyDbError(error)] };
+  revalidatePath("/app/admin/preop");
+  return { ok: true, message: "Item added." };
+}
+
+export async function deletePreopItem(_: ActionState, fd: FormData): Promise<ActionState> {
+  const parsed = idSchema.safeParse(fd.get("id"));
+  if (!parsed.success) return issues(parsed.error);
+  const { supabase, site } = await requireSiteAdmin();
+  const { error } = await supabase.from("preop_items").delete().eq("id", parsed.data).eq("site_id", site.id);
+  if (error) return { errors: [friendlyDbError(error)] };
+  revalidatePath("/app/admin/preop");
+  return { ok: true, message: "Item removed." };
+}
+
+export async function addDefaultPreopItems(): Promise<ActionState> {
+  const { supabase, site } = await requireSiteAdmin();
+  const { error } = await supabase
+    .from("preop_items")
+    .insert(DEFAULT_PREOP_ITEMS.map((label, i) => ({ site_id: site.id, label, sort_order: i + 1 })));
+  if (error) return { errors: [friendlyDbError(error)] };
+  revalidatePath("/app/admin/preop");
+  return { ok: true, message: "Default items added." };
 }

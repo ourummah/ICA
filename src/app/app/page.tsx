@@ -68,7 +68,6 @@ async function SignedInHome() {
           Register this phone or tablet as a cleaner device
         </Link>
       ) : null}
-      <p className="text-muted-foreground">QA pre-op inspection and release arrive in the next milestone.</p>
       <form action={signOut}>
         <Button type="submit" variant="outline">
           Sign out

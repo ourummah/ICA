@@ -86,3 +86,10 @@ export function describeException(type: Enums["exception_type"], detail: unknown
       return EXCEPTION_LABELS[type];
   }
 }
+
+/** "Jordan Smith" → "J. Smith", as shown on the release line (SPEC F6). */
+export function shortName(full: string): string {
+  const parts = full.trim().split(/\s+/);
+  if (parts.length < 2) return full.trim();
+  return `${parts[0][0]}. ${parts.slice(1).join(" ")}`;
+}

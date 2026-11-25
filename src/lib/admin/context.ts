@@ -94,3 +94,13 @@ export function formatSiteTime(iso: string, timezone: string): string {
     month: "short",
   }).format(new Date(iso));
 }
+
+/** 24-hour clock time in the site's time zone, e.g. "05:42". */
+export function formatSiteClock(iso: string, timezone: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: timezone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+}

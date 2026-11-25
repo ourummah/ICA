@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
-import { BoardLabel, colourStyles } from "@/components/supervisor/status";
+import { BoardLabel, colourStyles, ReleaseLine } from "@/components/supervisor/status";
 import { formatSiteTime, requireSiteRole } from "@/lib/admin/context";
 import { boardState } from "@/lib/supervisor/board";
-import { currentShift, loadExceptions, loadShiftTasks } from "@/lib/supervisor/data";
+import { currentShift, loadExceptions, loadShiftTasks, loadZoneQa } from "@/lib/supervisor/data";
 import { cn } from "@/lib/utils";
 
 async function Board() {
@@ -26,6 +26,7 @@ async function Board() {
     status: "open",
   });
   const reds = open.filter((e) => e.severity === "red").length;
+  const qa = shift ? await loadZoneQa(supabase, shift.id) : null;
 
   return (
     <>
@@ -76,6 +77,12 @@ async function Board() {
                     ? ` · ${state.openRed + state.openAmber} open exception${state.openRed + state.openAmber === 1 ? "" : "s"}`
                     : ""}
                 </span>
+                {qa?.preops.get(z.id) ? (
+                  <span className="text-sm">
+                    Pre-op: {qa.preops.get(z.id)!.result === "pass" ? "passed" : "failed"}
+                  </span>
+                ) : null}
+                <ReleaseLine release={qa?.releases.get(z.id)} timezone={site.timezone} />
               </Link>
             </li>
           );

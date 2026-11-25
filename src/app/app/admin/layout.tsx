@@ -8,6 +8,7 @@ const nav = [
   { href: "/app/admin/people", label: "People" },
   { href: "/app/admin/devices", label: "Devices" },
   { href: "/app/admin/tasks", label: "Tonight's tasks" },
+  { href: "/app/admin/preop", label: "Pre-op checklist" },
 ];
 
 export default function AdminLayout({ children }: LayoutProps<"/app/admin">) {
