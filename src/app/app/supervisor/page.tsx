@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { Suspense } from "react";
 
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
 import { BoardLabel, colourStyles, ReleaseLine } from "@/components/supervisor/status";
 import { formatSiteTime, requireSiteRole } from "@/lib/admin/context";
+import { translateInBackground } from "@/lib/ai/notes";
 import { boardState } from "@/lib/supervisor/board";
 import { currentShift, loadExceptions, loadShiftTasks, loadZoneQa } from "@/lib/supervisor/data";
 import { cn } from "@/lib/utils";
@@ -12,6 +14,8 @@ async function Board() {
   const { supabase, site } = await requireSiteRole(["supervisor", "qa", "site_admin"]);
   // Raise "not finished by shift end" exceptions before reading (idempotent).
   await supabase.rpc("flag_overdue_tasks", { p_site_id: site.id });
+  // Retry any notes still waiting for English (SPEC F8); runs after the page is sent.
+  after(() => translateInBackground(site.id));
 
   const shift = await currentShift(supabase, site.id);
   const { data: zones } = await supabase

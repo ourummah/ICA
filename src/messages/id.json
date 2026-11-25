@@ -1,1 +1,92 @@
-{}
+{
+  "common": {
+    "loading": "Memuat…",
+    "signOut": "Keluar",
+    "back": "Kembali",
+    "cancel": "Batal",
+    "retry": "Coba lagi",
+    "language": "Bahasa"
+  },
+  "sync": {
+    "allSaved": "Semua tersimpan ✓",
+    "syncing": "Menyinkronkan…",
+    "waiting": "Tersimpan di perangkat — {count, plural, other {# item}} menunggu sinkron"
+  },
+  "signIn": {
+    "title": "Siapa yang membersihkan?",
+    "subtitle": "Ketuk nama Anda",
+    "enterPin": "Masukkan PIN Anda",
+    "wrongPin": "PIN salah. Coba lagi.",
+    "lockedOut": "Terlalu banyak percobaan. Tunggu {seconds} detik.",
+    "noCleaners": "Belum ada petugas kebersihan untuk lokasi ini. Tanyakan ke supervisor Anda.",
+    "clear": "Hapus semua",
+    "deleteDigit": "Hapus"
+  },
+  "language": {
+    "title": "Pilih bahasa Anda",
+    "continue": "Lanjut"
+  },
+  "consent": {
+    "title": "Sebelum mulai",
+    "body": "Aplikasi ini mencatat foto, catatan, timer dan hasil tes saat Anda membersihkan. Catatan ini disimpan untuk keamanan pangan dan dapat diperiksa oleh supervisor, tim mutu dan auditor.",
+    "accept": "Saya mengerti"
+  },
+  "tasks": {
+    "title": "Pembersihan malam ini",
+    "mine": "Tugas Anda",
+    "others": "Tugas lain malam ini",
+    "none": "Tidak ada tugas untuk Anda malam ini. Tanyakan ke supervisor Anda.",
+    "noShift": "Belum ada shift yang direncanakan.",
+    "stepsDone": "{done} dari {total} langkah",
+    "reclean": "Bersihkan ulang",
+    "status": {
+      "pending": "Belum mulai",
+      "in_progress": "Sedang dikerjakan",
+      "completed": "Selesai",
+      "reclean_required": "Dikembalikan untuk dibersihkan ulang",
+      "verified": "Sudah diperiksa"
+    },
+    "risk": {
+      "high": "Risiko tinggi",
+      "medium": "Risiko sedang",
+      "low": "Risiko rendah"
+    }
+  },
+  "step": {
+    "progress": "Langkah {current} dari {total}",
+    "done": "Selesai",
+    "next": "Berikutnya",
+    "cantDo": "Tidak bisa melakukan langkah ini",
+    "cantDoTitle": "Kenapa langkah ini tidak bisa dilakukan?",
+    "reasons": {
+      "equipment_broken": "Alat rusak",
+      "no_chemical": "Bahan kimia habis",
+      "unsafe": "Tidak aman",
+      "no_access": "Tidak bisa dijangkau",
+      "other": "Alasan lain"
+    },
+    "chemical": "Bahan kimia",
+    "dilution": "Kadar campuran",
+    "takePhoto": "Ambil foto",
+    "retakePhoto": "Ambil foto ulang",
+    "photoNeeded": "Ambil foto untuk menyelesaikan langkah ini",
+    "addNote": "Tambah catatan",
+    "notePlaceholder": "Tulis dalam bahasa apa saja",
+    "timerRunning": "Tunggu — timer berjalan",
+    "timerDone": "Waktu habis. Langkah berikutnya.",
+    "finishEarly": "Selesai lebih awal",
+    "finishEarlyConfirm": "Timer belum selesai. Ketuk lagi untuk selesai lebih awal.",
+    "atpEnter": "Masukkan hasil ATP (RLU)",
+    "atpLimit": "Lulus jika {max} atau kurang",
+    "atpSave": "Simpan hasil",
+    "atpPass": "Lulus",
+    "atpFail": "Gagal — bersihkan ulang",
+    "atpFailHelp": "Beri tahu supervisor Anda. Bersihkan area ini lagi mulai dari langkah busa, lalu swab lagi.",
+    "saveFailed": "Gagal menyimpan. Periksa sinyal dan coba lagi."
+  },
+  "complete": {
+    "title": "Tugas selesai",
+    "body": "Kerja bagus. Pekerjaan Anda tersimpan di perangkat ini. Supervisor akan melihatnya setelah perangkat tersinkron.",
+    "backToTasks": "Kembali ke tugas"
+  }
+}

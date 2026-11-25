@@ -5,12 +5,13 @@ import { Suspense } from "react";
 import { Card } from "@/components/ui/card";
 import { RecleanForm, ResolveForm } from "@/components/supervisor/exception-actions";
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
+import { NoteBlock } from "@/components/supervisor/note-block";
 import { ExceptionBadge, TaskStatusBadge } from "@/components/supervisor/status";
 import { formatSiteTime, requireSiteRole } from "@/lib/admin/context";
 import { describeException } from "@/lib/supervisor/board";
 import { loadExceptions, signPhotoUrls, type DashboardException } from "@/lib/supervisor/data";
 
-import { requestReclean, resolveException } from "../../actions";
+import { requestReclean, resolveException, reviewTranslation } from "../../actions";
 
 const RESULT_LABEL = { done: "Done", skipped: "Skipped", failed: "Failed" } as const;
 
@@ -62,7 +63,8 @@ async function TaskDetail({ taskId }: { taskId: string }) {
       .select(
         `id, ssop_step_id, result, skip_reason, note_original, note_language, atp_value, timer_started_at,
          timer_ended_at, device_completed_at, server_received_at, supersedes_id,
-         profiles(display_name), photos(id, storage_path, sha256)`,
+         profiles(display_name), photos(id, storage_path, sha256),
+         note_translations(text_en, source, created_at, profiles(display_name))`,
       )
       .eq("task_id", task.id)
       .order("server_received_at"),
@@ -76,6 +78,7 @@ async function TaskDetail({ taskId }: { taskId: string }) {
 
   const steps = [...(task.ssops?.ssop_steps ?? [])].sort((a, b) => a.step_no - b.step_no);
   const canAct = roles.some((r) => r === "supervisor" || r === "site_admin" || r === "qa");
+  const canReview = roles.some((r) => r === "supervisor" || r === "qa");
   const canReclean = roles.some((r) => r === "supervisor" || r === "site_admin");
   const taskLevel = exceptions.filter((e) => !e.stepRecordId);
   const zone = task.equipment?.zones;
@@ -184,9 +187,14 @@ async function TaskDetail({ taskId }: { taskId: string }) {
                       ) : null}
                       {dwell !== null ? <p>Timer: {dwell} s</p> : null}
                       {r.note_original ? (
-                        <p>
-                          Note{r.note_language ? ` (${r.note_language})` : ""}: <q>{r.note_original}</q>
-                        </p>
+                        <NoteBlock
+                          recordId={r.id}
+                          original={r.note_original}
+                          language={r.note_language}
+                          translations={r.note_translations}
+                          canReview={canReview}
+                          action={reviewTranslation}
+                        />
                       ) : null}
                       {r.photos.length ? (
                         <div className="flex flex-wrap gap-2">

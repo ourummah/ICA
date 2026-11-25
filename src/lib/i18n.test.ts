@@ -26,4 +26,20 @@ describe("i18n", () => {
     const base = new Set(keys(en));
     for (const cat of [tl, id]) expect(keys(cat).filter((k) => !base.has(k))).toEqual([]);
   });
+
+  it("translates every English string into tl and id, keeping placeholders", () => {
+    const flat = (o: Record<string, unknown>, p = ""): [string, string][] =>
+      Object.entries(o).flatMap(([k, v]) =>
+        typeof v === "object" && v !== null
+          ? flat(v as Record<string, unknown>, `${p}${k}.`)
+          : [[`${p}${k}`, String(v)]],
+      );
+    const vars = (s: string) => [...s.matchAll(/\{(\w+)/g)].map((m) => m[1]).sort();
+    const enMap = new Map(flat(en));
+    for (const cat of [tl, id]) {
+      const map = new Map(flat(cat));
+      expect([...enMap.keys()].filter((k) => !map.get(k)?.trim())).toEqual([]);
+      for (const [k, v] of enMap) expect([k, vars(map.get(k) ?? "")]).toEqual([k, vars(v)]);
+    }
+  });
 });

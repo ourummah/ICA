@@ -39,8 +39,9 @@ test("F2/F3: cleaner signs in with PIN and completes the conveyor SSOP with phot
   await expect(page.getByRole("alert").filter({ hasText: "Wrong PIN" })).toBeVisible();
   for (const d of "1111") await page.getByRole("button", { name: d, exact: true }).click();
 
-  // First sign-in: language, then consent.
-  await expect(page.getByRole("heading", { name: "Choose your language" })).toBeVisible();
+  // First sign-in: language, then consent. The picker opens in Maria's preferred language (Tagalog).
+  await expect(page.getByRole("heading", { name: "Piliin ang wika mo" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tagalog" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: /English/ }).click();
   await expect(page.getByRole("heading", { name: "Before you start" })).toBeVisible();
   await page.getByRole("button", { name: "I understand" }).click();

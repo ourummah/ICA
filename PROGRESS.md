@@ -119,10 +119,26 @@
   - Unit tests for CSV escaping, filters and file names, and PDF rendering (with a photo, and with a failed chain).
   - The F4/F5 e2e now also downloads the demo night's PDF (checked under 15 s) and CSV, which has both Mincer 1 cleans including the failed ATP.
 
+### M8: Translation and multilingual cleaner UI
+
+- Cleaners' notes in Tagalog or Bahasa Indonesia are translated to English with the Claude API (`src/lib/ai/translate.ts`), only on the server:
+  - Structured output (`{ english }`), low effort, server-side model fallback. Model is `ANTHROPIC_MODEL`, defaulting to `claude-opus-5-5`.
+  - The prompt asks for a faithful translation that adds nothing and keeps chemical names, numbers, units and codes as written.
+- When it runs (`src/lib/ai/notes.ts`): after each sync batch with non-English notes, and whenever the zone board loads (a sweep of the last 14 days, 20 notes at a time). Both run after the response with `after()`, so a slow or failed call never blocks a sync or a page. Failures are logged and retried on the next sweep.
+- `POST /api/ai/translate` (staff only, Zod-validated, 30 requests a minute per user) translates one record on demand. It answers 503 when no key is set.
+- Results are new `note_translations` rows (`source = 'ai'`). The note as written is never changed.
+- Supervisor review on the task page: original and English side by side, labelled "AI-translated" or "Supervisor-confirmed (name)", with "AI translation for reference only. The original is the record." Supervisors and QA can confirm or correct; each review is a new `source = 'human'` row.
+- Cleaner UI fully translated into Tagalog and Bahasa Indonesia (`src/messages/tl.json`, `id.json`). **These are drafts and need a native speaker's review before a real pilot.**
+- With no API key, translation is simply off (notes show "Translation pending"). Automated tests use a clearly labelled stand-in (`AI_TRANSLATE_FAKE=true`, only when no key is set).
+- Tests:
+  - Unit: translator selection and prompt rules, rate limiter, every English string present in tl and id with the same placeholders.
+  - DB: the sweep translates only untranslated non-English notes, retries failures, stays within the site, and keeps originals. Supervisors can add human rows; AI rows, site admins and other sites can't.
+  - E2E: a Tagalog note appears with the AI label next to the original, then is confirmed and corrected.
+
 ## Next
 
-- M8: translation via the Claude API, and the cleaner UI in Tagalog and Bahasa Indonesia.
-- Translation review on the dashboard (part of F5) comes with M8, when there are AI translations to review.
+- M9: marketing website and demo request form.
+- M10: deploy to Vercel and rehearse the demo script on a real phone.
 
 ## Decisions
 
@@ -167,9 +183,14 @@
 - **The integrity check always walks the site's whole chain**, because a chain can only be verified from its start; the count shown is every chained entry for the site.
 - `@react-pdf/renderer` pinned to 4.9.0 (4.9.1 was a day old). Unit tests stub the `server-only` package (see `vitest.config.ts`).
 
+- **A note's language is the cleaner's chosen app language.** A note written in Tagalog by a cleaner using the English app is not translated. The prompt keeps English parts as they are, so mixed notes are fine.
+- **Translation runs in `after()` rather than a queue.** Enough for the demo; the board sweep catches anything a sync missed.
+- The rate limiter is in memory, per server instance: enough to stop a stuck client, not a distributed limit.
+
 ## Known gaps
 
 - E2E tests share one seeded tenant per run, so `--repeat-each` fails on the second pass (tasks are already completed). Run `npm run seed` between repeated runs.
 - If inserting exceptions fails after the records were saved, the error is logged and those records get no exceptions (the device doesn't resend saved records).
-- Translation review (F5) waits for M8.
+- Tagalog and Bahasa Indonesia UI strings are unreviewed drafts.
+- AI photo flags are a stretch goal (SPEC S1, after M10) and are not built.
 - WebP photos (only possible from desktop uploads) are listed by hash in the PDF without a thumbnail; the PDF library can't draw WebP.
