@@ -21,6 +21,7 @@ async function SignedInHome() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/app/login");
+  if (user.app_metadata?.kind === "device") redirect("/app/cleaner");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -54,6 +55,11 @@ async function SignedInHome() {
         <Button asChild size="lg" variant="accent" className="self-start">
           <Link href="/app/admin">Site setup</Link>
         </Button>
+      ) : null}
+      {(memberships ?? []).some((m) => m.role === "site_admin") ? (
+        <Link href="/app/device" className="text-sm text-accent underline">
+          Register this phone or tablet as a cleaner device
+        </Link>
       ) : null}
       <p className="text-muted-foreground">Supervisor and QA dashboards arrive in later milestones.</p>
       <form action={signOut}>

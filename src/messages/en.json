@@ -1,0 +1,91 @@
+{
+  "common": {
+    "loading": "Loading…",
+    "signOut": "Sign out",
+    "back": "Back",
+    "cancel": "Cancel",
+    "retry": "Try again",
+    "language": "Language"
+  },
+  "sync": {
+    "allSaved": "All saved",
+    "saving": "Saving…",
+    "failed": "Not saved — check signal"
+  },
+  "signIn": {
+    "title": "Who is cleaning?",
+    "subtitle": "Tap your name",
+    "enterPin": "Enter your PIN",
+    "wrongPin": "Wrong PIN. Try again.",
+    "lockedOut": "Too many tries. Wait {seconds} seconds.",
+    "noCleaners": "No cleaners are set up for this site yet. Ask your supervisor.",
+    "clear": "Clear",
+    "deleteDigit": "Delete"
+  },
+  "language": {
+    "title": "Choose your language",
+    "continue": "Continue"
+  },
+  "consent": {
+    "title": "Before you start",
+    "body": "This app records photos, notes, timers and test results while you clean. These records are kept for food safety and may be checked by your supervisor, quality team and auditors.",
+    "accept": "I understand"
+  },
+  "tasks": {
+    "title": "Tonight's cleaning",
+    "mine": "Your tasks",
+    "others": "Other tasks tonight",
+    "none": "No tasks for you tonight. Ask your supervisor.",
+    "noShift": "There is no shift planned yet.",
+    "stepsDone": "{done} of {total} steps",
+    "status": {
+      "pending": "Not started",
+      "in_progress": "In progress",
+      "completed": "Done",
+      "reclean_required": "Re-clean",
+      "verified": "Checked"
+    },
+    "risk": {
+      "high": "High risk",
+      "medium": "Medium risk",
+      "low": "Low risk"
+    }
+  },
+  "step": {
+    "progress": "Step {current} of {total}",
+    "done": "Done",
+    "next": "Next",
+    "cantDo": "Can't do this step",
+    "cantDoTitle": "Why can't you do this step?",
+    "reasons": {
+      "equipment_broken": "Equipment broken",
+      "no_chemical": "No chemical",
+      "unsafe": "Not safe",
+      "no_access": "Can't reach it",
+      "other": "Other reason"
+    },
+    "chemical": "Chemical",
+    "dilution": "Strength",
+    "takePhoto": "Take photo",
+    "retakePhoto": "Retake photo",
+    "photoNeeded": "Take a photo to finish this step",
+    "addNote": "Add note",
+    "notePlaceholder": "Write in any language",
+    "timerRunning": "Wait — timer running",
+    "timerDone": "Time is up. Next step.",
+    "finishEarly": "Finish early",
+    "finishEarlyConfirm": "Timer not finished. Tap again to finish early.",
+    "atpEnter": "Enter ATP reading (RLU)",
+    "atpLimit": "Pass if {max} or lower",
+    "atpSave": "Save reading",
+    "atpPass": "Pass",
+    "atpFail": "Fail — re-clean",
+    "atpFailHelp": "Tell your supervisor. Clean this area again from the foam step, then swab again.",
+    "saveFailed": "Could not save. Check signal and try again."
+  },
+  "complete": {
+    "title": "Task finished",
+    "body": "Well done. Your supervisor will see this once it has synced.",
+    "backToTasks": "Back to tasks"
+  }
+}

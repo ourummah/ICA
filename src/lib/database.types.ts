@@ -675,6 +675,11 @@ isOneToOne: false
 "move_ssop_step":
 { Args: { "p_direction": number,"p_step_id": string }; Returns: undefined
                            },
+"my_device":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "device_id": string,"label": string,"site_id": string,"site_name": string,"site_timezone": string
+            }[]
+                           },
 "replace_ssop_steps":
 { Args: { "p_ssop_id": string,"p_steps": Json }; Returns: number
                            },
@@ -685,6 +690,9 @@ isOneToOne: false
                            },
 "set_cleaner_pin":
 { Args: { "p_pin": string,"p_profile_id": string }; Returns: undefined
+                           },
+"set_cleaner_preferences":
+{ Args: { "p_accept_consent"?: boolean,"p_language"?: Database["public"]['Enums']["ui_language"],"p_profile_id": string }; Returns: undefined
                            },
 "verify_chain":
 { Args: { "p_from"?: string,"p_site_id": string,"p_to"?: string }; Returns: {
