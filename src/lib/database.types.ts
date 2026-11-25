@@ -341,6 +341,26 @@ isOneToOne: false
       referencedColumns: ["id","site_id"]
     }
                   ]
+                },"preop_items": {
+                  Row: {
+                    "created_at": string,"id": string,"label": string,"site_id": string,"sort_order": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"label": string,"site_id": string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"label"?: string,"site_id"?: string,"sort_order"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "preop_items_site_id_fkey"
+      columns: ["site_id"]
+isOneToOne: false
+      referencedRelation: "sites"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "auth_user_id": string | null,"consent_accepted_at": string | null,"created_at": string,"display_name": string,"id": string,"photo_url": string | null,"preferred_language": Database["public"]['Enums']["ui_language"],"updated_at": string

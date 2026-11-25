@@ -79,9 +79,30 @@
   - Unit tests for every engine rule and for the tile colours.
   - **F4/F5 acceptance e2e (`e2e/supervisor.spec.ts`)**: a supervisor on a laptop and a cleaner on a phone. The cleaner cuts a dwell short and fails an ATP. The Mincing tile turns red with no page reload within 10 s of the sync, and both exceptions show on their steps with the photos. The supervisor requests a re-clean, the cleaner does it properly, and the tile turns green live.
 
+### M6: Pre-op inspection and QA release
+
+- Configurable pre-op checklist per site (new `preop_items` table, with RLS and a test). The demo seeds the 7 default items from SPEC F6. Admins edit the list at `/app/admin/preop`, which also offers "Add the default items" when the list is empty.
+- Pre-op inspection per zone at `/app/supervisor/zones/<zone>/preop` (QA or supervisor):
+  - Mark each item pass or fail. A failure needs a note and can have a photo, compressed in the browser and stored in the private bucket under the site's folder.
+  - On a failure, QA can tick equipment to send back for re-clean. This uses the same `request_reclean()`, which QA may now call too.
+- Release or Hold per zone, on the zone page (QA only):
+  - Hold needs a reason.
+  - Release is blocked by a database trigger while any red exception is open on that zone's tasks this shift. QA can override, which needs a reason and is stored as `override_open_exceptions` with the reason.
+  - Times come from the server.
+  - Every decision goes into the audit hash chain (existing audit trigger).
+- Board and zone page show "Released 05:42 by J. Smith" (or "Held … : reason", with "(override)" when used) and the pre-op result. Both update live (releases and inspections added to Realtime).
+- Tests:
+  - 177 database tests: checklist permissions, inspector can't be forged, release blocked/overridden/blank reasons, other zones and amber exceptions don't block, server time, audit event and chain, QA re-clean.
+  - **F6 acceptance e2e (`e2e/qa-release.spec.ts`)** on the Chillers zone:
+    1. A pre-op fails with a note and a photo, and sends the trolleys for re-clean.
+    2. A second pre-op passes.
+    3. Release is blocked by an open red exception, and an override without a reason is refused.
+    4. An override with a reason releases the zone.
+    5. The board shows "Released HH:MM by J. Smith", and the chain verifies.
+
 ## Next
 
-- M6: pre-op inspection and QA release.
+- M7: audit pack PDF/CSV with chain verification.
 - Translation review on the dashboard (part of F5) comes with M8, when there are AI translations to review.
 
 ## Decisions
@@ -117,6 +138,11 @@
 - **Clock skew is flagged once per task per sync batch**, on the batch's first record for that task, rather than on every record.
 - **Overdue tasks are flagged when a dashboard loads**, not on a timer. No background job is needed for the demo; a cron can call `flag_overdue_tasks()` later.
 - The admin builder e2e now versions the Paddle mixer SSOP instead of Mincer 1, so it can't change the steps of tasks other tests clean.
+
+- **Release is blocked only by open red exceptions** (as SPEC F6 says), not by a missing or failed pre-op; the zone page shows the pre-op result next to the decision.
+- **Pre-op photos go through a server action** with a 4 MB body limit (Vercel's cap is 4.5 MB). They are compressed in the browser first (1600px JPEG), like cleaner photos.
+- **QA can request re-cleans** (from a failed pre-op, SPEC F6), as well as supervisors and site admins.
+- Release and pre-op forms keep their inputs controlled, because React resets uncontrolled form fields after every action, which wiped the override box after a failed attempt.
 
 ## Known gaps
 

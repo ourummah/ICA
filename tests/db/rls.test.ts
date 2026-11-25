@@ -38,6 +38,7 @@ const SITE_SCOPED_TABLES = [
   "photos",
   "exceptions",
   "preop_inspections",
+  "preop_items",
   "releases",
   "audit_events",
   "site_access",

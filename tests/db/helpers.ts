@@ -141,12 +141,13 @@ export async function populateSite(
     `insert into exceptions (site_id, task_id, step_record_id, type, severity) values ($1, $2, $3, 'atp_fail', 'red')`,
     [siteId, task.id, record.id],
   );
+  await sql(`insert into preop_items (site_id, label) values ($1, 'No visible residue')`, [siteId]);
   await sql(
     `insert into preop_inspections (site_id, zone_id, shift_id, inspector_profile_id, result) values ($1, $2, $3, $4, 'pass')`,
     [siteId, zone.id, shift.id, inspectorProfileId],
   );
   await sql(
-    `insert into releases (site_id, zone_id, shift_id, qa_profile_id, decision) values ($1, $2, $3, $4, 'released')`,
+    `insert into releases (site_id, zone_id, shift_id, qa_profile_id, decision, reason) values ($1, $2, $3, $4, 'held', 'Fixture hold')`,
     [siteId, zone.id, shift.id, inspectorProfileId],
   );
   return {

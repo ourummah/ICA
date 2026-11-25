@@ -125,6 +125,11 @@ describe("demo seed", () => {
     expect(Number(conveyor.steps)).toBe(10);
     expect(conveyor.atp_max).toBe(150);
 
+    const [preop] = await sql<{ n: string }>(`select count(*) as n from preop_items where site_id = $1`, [
+      result.siteId,
+    ]);
+    expect(Number(preop.n)).toBe(7);
+
     const [chain] = await sql<{ verified: boolean }>(`select verified from verify_chain($1)`, [
       result.siteId,
     ]);

@@ -7,6 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "../database.types.ts";
+import { DEFAULT_PREOP_ITEMS } from "../qa/defaults.ts";
 
 type Admin = SupabaseClient<Database>;
 type StepType = Database["public"]["Enums"]["step_type"];
@@ -474,6 +475,14 @@ export async function seedDemo(
       .select("id, name"),
     "chemicals",
   );
+  must(
+    await admin
+      .from("preop_items")
+      .insert(DEFAULT_PREOP_ITEMS.map((label, i) => ({ site_id: site.id, label, sort_order: i + 1 })))
+      .select("id"),
+    "preop items",
+  );
+
   const chemicalId = (key: ChemicalKey) => {
     const name = chemicals.find((c) => c.key === key)!.name;
     return chemicalRows.find((c) => c.name === name)!.id;

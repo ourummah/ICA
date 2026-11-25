@@ -1,9 +1,19 @@
-import { CircleCheck, CircleDashed, CircleMinus, OctagonAlert, TriangleAlert } from "lucide-react";
+import {
+  CircleCheck,
+  CircleDashed,
+  CircleMinus,
+  Hand,
+  OctagonAlert,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/card";
 import type { Database } from "@/lib/database.types";
+import { formatSiteClock } from "@/lib/admin/context";
 import type { BoardColour } from "@/lib/supervisor/board";
-import { EXCEPTION_LABELS } from "@/lib/supervisor/board";
+import { EXCEPTION_LABELS, shortName } from "@/lib/supervisor/board";
+import type { ReleaseInfo } from "@/lib/supervisor/data";
 import { cn } from "@/lib/utils";
 
 type Enums = Database["public"]["Enums"];
@@ -82,5 +92,29 @@ export function ExceptionBadge({
       <Icon className="size-3.5" aria-hidden />
       {EXCEPTION_LABELS[type]} · {severity}
     </Badge>
+  );
+}
+
+/** "Released 05:42 by J. Smith" / "Held 05:10 by J. Smith: reason" (SPEC F6). */
+export function ReleaseLine({ release, timezone }: { release: ReleaseInfo | undefined; timezone: string }) {
+  if (!release) return null;
+  const released = release.decision === "released";
+  const Icon = released ? ShieldCheck : Hand;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-start gap-1.5 text-sm font-semibold",
+        released ? "text-status-green" : "text-status-red",
+      )}
+      data-release={release.decision}
+    >
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
+      <span>
+        {released ? "Released" : "Held"} {formatSiteClock(release.decidedAt, timezone)} by{" "}
+        {shortName(release.byName)}
+        {release.override ? " (override)" : ""}
+        {release.reason ? `: ${release.reason}` : ""}
+      </span>
+    </span>
   );
 }

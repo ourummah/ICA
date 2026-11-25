@@ -224,9 +224,8 @@ describe("request_reclean", () => {
     expect(twice.error?.message).toMatch(/already requested/);
   });
 
-  it("is for supervisors and site admins of the site only", async () => {
+  it("is for supervisors, QA and site admins of the site only", async () => {
     const taskId = await newTask();
-    expect((await qa.rpc("request_reclean", { p_task_id: taskId, p_note: "x" })).error).not.toBeNull();
     expect((await device.rpc("request_reclean", { p_task_id: taskId, p_note: "x" })).error).not.toBeNull();
     expect(
       (await otherSupervisor.rpc("request_reclean", { p_task_id: taskId, p_note: "x" })).error,

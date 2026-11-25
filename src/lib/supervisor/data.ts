@@ -114,3 +114,67 @@ export async function signPhotoUrls(supabase: Supabase, paths: string[]): Promis
   for (const row of data ?? []) if (row.path && row.signedUrl) out.set(row.path, row.signedUrl);
   return out;
 }
+
+export interface ReleaseInfo {
+  zoneId: string;
+  decision: Database["public"]["Enums"]["release_decision"];
+  reason: string | null;
+  override: boolean;
+  decidedAt: string;
+  byName: string;
+}
+
+export interface PreopInfo {
+  id: string;
+  zoneId: string;
+  result: Database["public"]["Enums"]["inspection_result"];
+  completedAt: string;
+  byName: string;
+  items: { label: string; pass: boolean; note: string | null; photo_path: string | null }[];
+}
+
+/** The latest release decision and the latest pre-op inspection per zone for a shift. */
+export async function loadZoneQa(
+  supabase: Supabase,
+  shiftId: string,
+): Promise<{ releases: Map<string, ReleaseInfo>; preops: Map<string, PreopInfo> }> {
+  const [{ data: rel, error: relErr }, { data: pre, error: preErr }] = await Promise.all([
+    supabase
+      .from("releases")
+      .select("zone_id, decision, reason, override_open_exceptions, decided_at, profiles(display_name)")
+      .eq("shift_id", shiftId)
+      .order("decided_at", { ascending: false }),
+    supabase
+      .from("preop_inspections")
+      .select("id, zone_id, result, completed_at, items, profiles(display_name)")
+      .eq("shift_id", shiftId)
+      .order("completed_at", { ascending: false }),
+  ]);
+  if (relErr) throw relErr;
+  if (preErr) throw preErr;
+  const releases = new Map<string, ReleaseInfo>();
+  for (const r of rel ?? []) {
+    if (releases.has(r.zone_id)) continue;
+    releases.set(r.zone_id, {
+      zoneId: r.zone_id,
+      decision: r.decision,
+      reason: r.reason,
+      override: r.override_open_exceptions,
+      decidedAt: r.decided_at,
+      byName: r.profiles?.display_name ?? "?",
+    });
+  }
+  const preops = new Map<string, PreopInfo>();
+  for (const p of pre ?? []) {
+    if (preops.has(p.zone_id)) continue;
+    preops.set(p.zone_id, {
+      id: p.id,
+      zoneId: p.zone_id,
+      result: p.result,
+      completedAt: p.completed_at,
+      byName: p.profiles?.display_name ?? "?",
+      items: Array.isArray(p.items) ? (p.items as PreopInfo["items"]) : [],
+    });
+  }
+  return { releases, preops };
+}

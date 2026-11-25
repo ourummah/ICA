@@ -3,14 +3,19 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { LiveRefresh } from "@/components/supervisor/live-refresh";
-import { BoardLabel, colourStyles, TaskStatusBadge } from "@/components/supervisor/status";
-import { requireSiteRole } from "@/lib/admin/context";
-import { boardState } from "@/lib/supervisor/board";
-import { currentShift, loadExceptions, loadShiftTasks } from "@/lib/supervisor/data";
+import { ReleaseForm } from "@/components/supervisor/qa-forms";
+import { BoardLabel, colourStyles, ReleaseLine, TaskStatusBadge } from "@/components/supervisor/status";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { formatSiteTime, requireSiteRole } from "@/lib/admin/context";
+import { boardState, shortName } from "@/lib/supervisor/board";
+import { currentShift, loadExceptions, loadShiftTasks, loadZoneQa } from "@/lib/supervisor/data";
+
+import { decideRelease } from "../../actions";
 import { cn } from "@/lib/utils";
 
 async function Zone({ zoneId }: { zoneId: string }) {
-  const { supabase, site } = await requireSiteRole(["supervisor", "qa", "site_admin"]);
+  const { supabase, site, roles } = await requireSiteRole(["supervisor", "qa", "site_admin"]);
   const { data: zone } = await supabase
     .from("zones")
     .select("id, name, risk_level")
@@ -27,6 +32,11 @@ async function Zone({ zoneId }: { zoneId: string }) {
     status: "open",
   });
   const zoneState = boardState(tasks, open, shift?.endsAt ?? null);
+  const qa = shift ? await loadZoneQa(supabase, shift.id) : null;
+  const preop = qa?.preops.get(zone.id);
+  const release = qa?.releases.get(zone.id);
+  const isQa = roles.includes("qa");
+  const canInspect = isQa || roles.includes("supervisor");
 
   // One row per piece of equipment; its tasks newest first (a re-clean sits above the original).
   const byEquipment = new Map<string, typeof tasks>();
@@ -44,6 +54,55 @@ async function Zone({ zoneId }: { zoneId: string }) {
         </div>
         <LiveRefresh siteId={site.id} />
       </div>
+      {shift ? (
+        <Card className="flex flex-col gap-4" aria-label="Pre-op and release">
+          <h2 className="text-lg font-semibold">Pre-op and release</h2>
+          <div className="flex flex-col gap-1 text-sm">
+            {preop ? (
+              <>
+                <p data-preop={preop.result}>
+                  <strong className={preop.result === "pass" ? "text-status-green" : "text-status-red"}>
+                    Pre-op {preop.result === "pass" ? "passed" : "failed"}
+                  </strong>{" "}
+                  {formatSiteTime(preop.completedAt, site.timezone)} by {shortName(preop.byName)}
+                </p>
+                {preop.items.filter((i) => !i.pass).length ? (
+                  <ul className="list-disc pl-5">
+                    {preop.items
+                      .filter((i) => !i.pass)
+                      .map((i, n) => (
+                        <li key={n}>
+                          {i.label}: {i.note}
+                          {i.photo_path ? " (photo)" : ""}
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-muted-foreground">No pre-op inspection yet this shift.</p>
+            )}
+            {canInspect ? (
+              <Button asChild variant="outline" size="sm" className="mt-1 self-start">
+                <Link href={`/app/supervisor/zones/${zone.id}/preop`}>
+                  {preop ? "Inspect again" : "Start pre-op inspection"}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          <ReleaseLine release={release} timezone={site.timezone} />
+          {isQa ? (
+            <ReleaseForm
+              action={decideRelease}
+              zoneId={zone.id}
+              shiftId={shift.id}
+              openRed={zoneState.openRed}
+            />
+          ) : !release ? (
+            <p className="text-sm text-muted-foreground">QA releases or holds the zone.</p>
+          ) : null}
+        </Card>
+      ) : null}
       {byEquipment.size === 0 ? (
         <p className="text-muted-foreground">No tasks in this zone tonight.</p>
       ) : null}

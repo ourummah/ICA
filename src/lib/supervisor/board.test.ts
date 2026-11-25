@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { boardState, describeException, type BoardException, type BoardTask } from "./board";
+import { boardState, describeException, shortName, type BoardException, type BoardTask } from "./board";
 
 const end = "2026-11-25T19:00:00Z";
 const during = new Date("2026-11-25T13:00:00Z");
@@ -89,5 +89,13 @@ describe("describeException", () => {
       "Task not finished by shift end",
     );
     expect(describeException("clock_skew", { skew_seconds: -600 })).toBe("Device clock off by 10 min");
+  });
+});
+
+describe("shortName", () => {
+  it("abbreviates the first name", () => {
+    expect(shortName("Jordan Smith")).toBe("J. Smith");
+    expect(shortName("Ramon Dela Cruz")).toBe("R. Dela Cruz");
+    expect(shortName("Cher")).toBe("Cher");
   });
 });

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@/lib/supabase/client";
 
-const TABLES = ["tasks", "exceptions", "step_records", "photos"] as const;
+const TABLES = ["tasks", "exceptions", "step_records", "photos", "releases", "preop_inspections"] as const;
 const FALLBACK_MS = 30_000;
 
 /**
