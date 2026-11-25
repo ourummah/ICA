@@ -4,6 +4,13 @@ This takes about 30 minutes the first time. You need a GitHub, Supabase and Verc
 Anthropic API key. **Never paste keys into chat or commit them.** They only go into the Supabase,
 GitHub and Vercel settings pages named below.
 
+## 0. Merge the pull requests
+
+Vercel deploys the `main` branch, and the database workflow only appears once it is on `main`.
+Merge the open pull requests in order, oldest first (#1, then #2, and so on), using
+**Create a merge commit** (not squash, which makes the later, stacked PRs conflict). After each
+merge, the next PR moves onto `main` by itself; wait for its checks to go green, then merge it.
+
 ## 1. Create the Supabase project (Sydney)
 
 1. In the Supabase dashboard choose **New project**.
