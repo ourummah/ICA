@@ -664,6 +664,11 @@ isOneToOne: false
 "delete_ssop_step":
 { Args: { "p_step_id": string }; Returns: undefined
                            },
+"device_cleaner_pin_hashes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "pin_hash": string,"profile_id": string
+            }[]
+                           },
 "device_cleaners":
 { Args: Record<PropertyKey, never>; Returns: {
               "display_name": string,"has_consented": boolean,"photo_url": string,"preferred_language": Database["public"]['Enums']["ui_language"],"profile_id": string

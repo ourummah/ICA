@@ -8,9 +8,9 @@
     "language": "Language"
   },
   "sync": {
-    "allSaved": "All saved",
-    "saving": "Saving…",
-    "failed": "Not saved — check signal"
+    "allSaved": "All saved ✓",
+    "syncing": "Syncing…",
+    "waiting": "Saved on device — {count, plural, one {# item} other {# items}} waiting to sync"
   },
   "signIn": {
     "title": "Who is cleaning?",
@@ -85,7 +85,7 @@
   },
   "complete": {
     "title": "Task finished",
-    "body": "Well done. Your supervisor will see this once it has synced.",
+    "body": "Well done. Your work is saved on this device. Your supervisor will see it once the device has synced.",
     "backToTasks": "Back to tasks"
   }
 }

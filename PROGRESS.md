@@ -49,9 +49,21 @@
 - `DEMO_FAST_TIMERS=true` turns dwell minutes into seconds (e2e runs with it on).
 - Tests: 153 database tests; unit tests for payload hashing and i18n fallback; phone e2e that registers a device, signs in by PIN, completes the 10-step conveyor SSOP (3 photos, early dwell finish, a note, failed ATP), survives a refresh mid-task, then checks the records, photos, task status and hash chain in the database.
 
+### M4: Offline
+
+- Service worker (Serwist, `@serwist/turbopack`): static assets precached; the cleaner page cached on every online visit and served from cache with no signal. Scoped to `/app/cleaner` so staff pages are never served from cache. Web app manifest and icon.
+- IndexedDB via Dexie (`src/offline/db.ts`): local step records (kept after sync), photo blobs (freed once the server has them), cached cleaners and tonight's tasks.
+- Every step is saved to IndexedDB first, record and photo in one transaction (`src/offline/outbox.ts`), then synced from the outbox (`src/offline/sync.ts`): records oldest first in batches, then photos of synced records. Idempotent end to end, so interrupted syncs are safe to repeat.
+- Sync runs when the browser comes online, on app focus, every 30 s while online and after each save, with exponential backoff (5 s doubling to 5 min) on failure (`src/offline/use-sync.ts`).
+- Sync indicator on every cleaner screen: "All saved ✓" / "Saved on device — N items waiting to sync" / "Syncing…".
+- Offline PIN sign-in: PIN hashes for the device's own cleaners are cached (`device_cleaner_pin_hashes()`) and checked on the device with bcryptjs while less than a day old; otherwise the server checks.
+- Cached data renders first; network loads time out after 8–10 s and fall back to the cache.
+- Fixed: registering a device or signing out now ends the session on that browser only (it used to sign the admin out everywhere).
+- Tests: unit tests for the outbox (offline queueing, sync, retry without duplicates, rejection, photo cleanup), backoff and offline PIN checks against a real pgcrypto hash. **M4 acceptance e2e (`e2e/offline.spec.ts`)**: with `context.setOffline(true)`, signs in by PIN with no signal, completes the 9-step Slicer 2 SSOP (3 photos, a note, early dwell, ATP), shows "12 items waiting to sync", reloads while offline with progress intact, then goes online and checks 9 records with no duplicates, 3 photos, a completed task and an intact chain.
+
 ## Next
 
-- M4: offline: service worker, Dexie outbox, sync indicator ("Saved on device — N items waiting to sync").
+- M5: exceptions engine, supervisor dashboard with realtime, re-clean.
 
 ## Decisions
 
@@ -77,6 +89,11 @@
 - **Step text is shown in English for now.** SSOP steps are written in English; UI labels go through next-intl. Translating SSOP content per language is out of scope for the MVP (SPEC F3 says English fallback).
 - **An ATP reading over the limit is stored as result `failed`** (with the reading), so failures are obvious in records and the exceptions engine (M5).
 
+- **`cacheComponents` turned off** in `next.config.ts`. Serwist's Turbopack route needs route segment config that Cache Components doesn't allow; the app didn't rely on it.
+- **Language and consent changes made offline** are saved on the device straight away but only sent to the server the next time they change online. Low impact for the demo.
+
 ## Known gaps
+
+- E2E tests share one seeded tenant per run, so `--repeat-each` fails on the second pass (tasks are already completed). Run `npm run seed` between repeated runs.
 
 - None yet.

@@ -109,6 +109,7 @@ test("F2/F3: cleaner signs in with PIN and completes the conveyor SSOP with phot
   await page.getByRole("button", { name: "Next" }).click();
 
   await expect(page.getByRole("heading", { name: "Task finished" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("All saved", { timeout: 20_000 });
 
   // Server side: 10 chained records, 3 verified photos, task completed, chain intact.
   const [task] = await query<{ id: string; status: string; site_id: string }>(

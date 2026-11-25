@@ -46,8 +46,9 @@ export async function registerThisDevice(_: ActionState, fd: FormData): Promise<
     return { errors: [insertErr.message] };
   }
 
+  // Sign out on this browser only: the admin stays signed in on their laptop.
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
   if (signInErr) return { errors: [signInErr.message] };
 

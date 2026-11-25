@@ -3,7 +3,7 @@
 import { CircleCheck, CloudOff, Languages, LogOut, RefreshCw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export type SyncState = "saved" | "saving" | "failed";
+import type { SyncStatus } from "@/offline/use-sync";
 
 /** Shown on every cleaner screen: who is signed in and whether their work is saved (SPEC 10). */
 export function CleanerHeader({
@@ -13,7 +13,7 @@ export function CleanerHeader({
   onSignOut,
 }: {
   name: string | null;
-  sync: SyncState;
+  sync: SyncStatus;
   onLanguage?: () => void;
   onSignOut?: () => void;
 }) {
@@ -23,17 +23,18 @@ export function CleanerHeader({
       <div className="min-w-0">
         {name ? <p className="truncate text-lg font-semibold">{name}</p> : null}
         <p role="status" aria-live="polite" className="flex items-center gap-1.5 text-base">
-          {sync === "saved" ? (
+          {sync.syncing ? (
+            <>
+              <RefreshCw className="size-5 animate-spin" aria-hidden /> {t("sync.syncing")}
+            </>
+          ) : sync.pending === 0 ? (
             <>
               <CircleCheck className="size-5 text-green-300" aria-hidden /> {t("sync.allSaved")}
             </>
-          ) : sync === "saving" ? (
-            <>
-              <RefreshCw className="size-5 animate-spin" aria-hidden /> {t("sync.saving")}
-            </>
           ) : (
             <>
-              <CloudOff className="size-5 text-amber-300" aria-hidden /> {t("sync.failed")}
+              <CloudOff className="size-5 shrink-0 text-amber-300" aria-hidden />{" "}
+              {t("sync.waiting", { count: sync.pending })}
             </>
           )}
         </p>
