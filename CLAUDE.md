@@ -34,8 +34,10 @@ Next.js App Router + TypeScript, Tailwind + shadcn/ui, Dexie (IndexedDB), a PWA 
 ## Commands (keep this list current as you add scripts)
 - `npm run dev` — start the local dev server
 - `npm run lint` / `npm run typecheck` / `npm test` / `npm run e2e`
+- `npm run format` / `npm run format:check` — Prettier
+- `npm run db:types` — regenerate `src/lib/database.types.ts` from the local database
 - `npm run seed` — load the demo tenant (Southern Cross Meats (Demo))
-- `supabase start` / `supabase db reset` — local database
+- `npx supabase start` / `npx supabase db reset` (or `npm run db:start` / `npm run db:reset`) — local database (needs Docker)
 
 ## Definition of done for the MVP
 SPEC.md section 12 runs end-to-end on the deployed Vercel URL with a real phone, including the airplane-mode part, and `PROGRESS.md` lists any known gaps.
