@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { formatClock, getOrStartTimer, useCountdown } from "./dwell-timer";
 import { Keypad } from "./keypad";
 import { StepIcon } from "./step-icon";
-import { capturePhoto, type CapturedPhoto } from "./submit";
+import { capturePhoto, type CapturedPhoto } from "./photo";
 import type { Step } from "./types";
 
 export const SKIP_REASONS = ["equipment_broken", "no_chemical", "unsafe", "no_access", "other"] as const;

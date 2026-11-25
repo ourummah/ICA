@@ -7,17 +7,19 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { messagesFor, type Locale } from "@/lib/i18n";
 import type { StepRecordPayload } from "@/lib/records/payload";
+import { getDb, type LocalRecord } from "@/offline/db";
+import { saveStepLocally } from "@/offline/outbox";
+import { useSync } from "@/offline/use-sync";
 
 import { ConsentNotice } from "./consent";
-import { loadCleanerData, loadCleaners, savePreferences, verifyPin } from "./data";
+import { cachedCleanerState, loadCleanerData, loadCleaners, savePreferences, verifyPin } from "./data";
 import { clearTimer } from "./dwell-timer";
-import { CleanerHeader, type SyncState } from "./header";
+import { CleanerHeader } from "./header";
 import { LanguagePicker } from "./language-picker";
 import { SignIn } from "./sign-in";
 import { StepScreen, type StepResult } from "./step-screen";
-import { submitStepRecord, uploadPhoto } from "./submit";
 import { doneStepIds, TaskList } from "./task-list";
-import type { Cleaner, CleanerData, DeviceInfo } from "./types";
+import type { Cleaner, CleanerData, DeviceInfo, RecordSummary } from "./types";
 
 const CLEANER_KEY = "ica.cleaner";
 
@@ -80,31 +82,46 @@ function App({
   const [screen, setScreen] = useState<Screen>(() =>
     readStoredCleaner() ? { name: "tasks" } : { name: "signin" },
   );
-  const [sync, setSync] = useState<SyncState>("saved");
+  const [localRecords, setLocalRecords] = useState<LocalRecord[]>([]);
+  const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const db = getDb();
 
   const refresh = useCallback(async () => {
     try {
-      setData(await loadCleanerData(device.siteId));
+      setData((await loadCleanerData(device.siteId)).data);
       setLoadError(false);
     } catch {
       setLoadError(true);
     }
   }, [device.siteId]);
+  const { status: syncStatus, sync } = useSync(db, refresh);
 
   useEffect(() => {
     let live = true;
+    // Show what the device has straight away, then refresh from the server if there is signal.
+    cachedCleanerState()
+      .then((c) => {
+        if (!live) return;
+        if (c.cleaners) setCleaners((cur) => cur ?? c.cleaners);
+        if (c.data) setData((cur) => cur ?? c.data);
+      })
+      .catch(() => undefined);
     loadCleaners()
       .then((c) => live && setCleaners(c))
       .catch(() => live && setLoadError(true));
     loadCleanerData(device.siteId)
-      .then((d) => live && setData(d))
+      .then((d) => live && setData(d.data))
       .catch(() => live && setLoadError(true));
+    db.records
+      .toArray()
+      .then((r) => live && setLocalRecords(r))
+      .catch(() => undefined);
     return () => {
       live = false;
     };
-  }, [device.siteId]);
+  }, [device.siteId, db]);
 
   const signIn = (c: Cleaner) => {
     setCleaner(c);
@@ -120,12 +137,18 @@ function App({
     setScreen({ name: "signin" });
   };
 
+  const updateCleaner = (updated: Cleaner) => {
+    setCleaner(updated);
+    storeCleaner(updated);
+    setCleaners(
+      (list) => list?.map((c) => (c.profileId === updated.profileId ? { ...c, ...updated } : c)) ?? list,
+    );
+  };
+
   const pickLanguage = async (l: Locale) => {
     if (!cleaner) return;
     setLocale(l);
-    const updated = { ...cleaner, language: l };
-    setCleaner(updated);
-    storeCleaner(updated);
+    updateCleaner({ ...cleaner, language: l });
     savePreferences(cleaner.profileId, l, false).catch(() => undefined);
     setScreen(
       screen.name === "language" && screen.then === "consent" ? { name: "consent" } : { name: "tasks" },
@@ -134,22 +157,36 @@ function App({
 
   const acceptConsent = async () => {
     if (!cleaner) return;
-    const updated = { ...cleaner, hasConsented: true };
-    setCleaner(updated);
-    storeCleaner(updated);
+    updateCleaner({ ...cleaner, hasConsented: true });
     savePreferences(cleaner.profileId, null, true).catch(() => undefined);
     setScreen({ name: "tasks" });
   };
 
+  // What the server has, plus everything saved on this device (synced or still waiting).
+  const records: RecordSummary[] = (() => {
+    const byId = new Map<string, RecordSummary>((data?.records ?? []).map((r) => [r.clientRecordId, r]));
+    for (const r of localRecords) {
+      if (r.status === "rejected") continue;
+      byId.set(r.clientRecordId, {
+        clientRecordId: r.clientRecordId,
+        taskId: r.taskId,
+        stepId: r.stepId,
+        result: r.payload.result,
+        atpValue: r.payload.atp_value,
+      });
+    }
+    return [...byId.values()];
+  })();
+
   const task = screen.name === "task" ? data?.tasks.find((x) => x.id === screen.taskId) : undefined;
-  const done = task && data ? doneStepIds(task, data.records) : new Set<string>();
+  const done = task ? doneStepIds(task, records) : new Set<string>();
   const stepIndex = task ? task.steps.findIndex((s) => !done.has(s.id)) : -1;
   const step = task && stepIndex >= 0 ? task.steps[stepIndex] : undefined;
 
   const completeStep = async (r: StepResult) => {
-    if (!task || !step || !cleaner || !data) return;
+    if (!task || !step || !cleaner) return;
     setSaveError(null);
-    setSync("saving");
+    setSaving(true);
     const payload: StepRecordPayload = {
       client_record_id: crypto.randomUUID(),
       task_id: task.id,
@@ -167,28 +204,16 @@ function App({
       supersedes_client_record_id: null,
     };
     try {
-      await submitStepRecord(payload);
-      if (r.photo) await uploadPhoto(r.photo, payload.client_record_id);
+      // Device first, network later (SPEC 7): the step is safe once this resolves.
+      const saved = await saveStepLocally(db, payload, r.photo);
+      setLocalRecords((prev) => [...prev, saved]);
       clearTimer(task.id, step.id);
-      const records = [
-        ...data.records,
-        {
-          clientRecordId: payload.client_record_id,
-          taskId: task.id,
-          stepId: step.id,
-          result: r.result,
-          atpValue: r.atpValue,
-        },
-      ];
-      setData({ ...data, records });
-      setSync("saved");
-      if (stepIndex === task.steps.length - 1) {
-        setScreen({ name: "complete" });
-        void refresh();
-      }
+      if (stepIndex === task.steps.length - 1) setScreen({ name: "complete" });
+      void sync(true);
     } catch (e) {
-      setSync("failed");
       setSaveError(e instanceof Error ? e.message : "save failed");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -197,7 +222,7 @@ function App({
     <div className="flex min-h-full flex-1 flex-col bg-background text-lg" lang={locale}>
       <CleanerHeader
         name={headerName}
-        sync={sync}
+        sync={syncStatus}
         onLanguage={
           cleaner && screen.name !== "signin"
             ? () => setScreen({ name: "language", then: "tasks" })
@@ -229,7 +254,7 @@ function App({
           data ? (
             <TaskList
               tasks={data.tasks}
-              records={data.records}
+              records={records}
               profileId={cleaner.profileId}
               hasShift={!!data.shift}
               onOpen={(taskId) => setScreen({ name: "task", taskId })}
@@ -248,7 +273,7 @@ function App({
               total={task.steps.length}
               equipmentName={task.equipmentName}
               fastTimers={fastTimers}
-              saving={sync === "saving"}
+              saving={saving}
               error={saveError}
               onBack={() => setScreen({ name: "tasks" })}
               onComplete={completeStep}

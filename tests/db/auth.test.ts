@@ -151,3 +151,17 @@ describe("demo seed", () => {
     expect(pinOk.ok).toBe(true);
   });
 });
+
+describe("offline PIN hashes", () => {
+  it("gives a device the hashes of its own site's cleaners only", async () => {
+    const { data, error } = await deviceA.rpc("device_cleaner_pin_hashes");
+    expect(error).toBeNull();
+    expect((data ?? []).map((r) => r.profile_id)).toEqual([cleanerA]);
+    expect(data?.[0].pin_hash).toMatch(/^\$2a\$/);
+  });
+
+  it("gives staff nothing", async () => {
+    const { data } = await staffA.rpc("device_cleaner_pin_hashes");
+    expect(data ?? []).toEqual([]);
+  });
+});
