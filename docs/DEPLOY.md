@@ -9,7 +9,7 @@ GitHub and Vercel settings pages named below.
 Vercel deploys the `main` branch, and the database workflow only appears once it is on `main`.
 Merge the open pull requests in order, oldest first (#1, then #2, and so on), using
 **Create a merge commit** (not squash, which makes the later, stacked PRs conflict). After each
-merge, the next PR moves onto `main` by itself; wait for its checks to go green, then merge it.
+merge, press **Delete branch** on that PR: GitHub then moves the next PR onto `main` by itself. Wait for its checks to go green, then merge it.
 
 ## 1. Create the Supabase project (Sydney)
 
